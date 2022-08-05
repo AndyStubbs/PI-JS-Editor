@@ -4,7 +4,7 @@
 require.config( { paths: { vs: "monaco-editor/min/vs" } } );
 
 require( [ "vs/editor/editor.main" ], function () {
-    editor.create( "container" );
+    editor.create( document.querySelector( ".main-editor" ) );
 } );
 
 var editor = function () {
@@ -12,7 +12,7 @@ var editor = function () {
         "create": create
     };
 
-    function create( containerId ) {
+    function create( containerElement ) {
 
         monaco.editor.defineTheme( "myCustomTheme", {
             base: "vs-dark", // can also be vs-dark or hc-black
@@ -41,13 +41,20 @@ var editor = function () {
             "color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );\n\t" +
             "return color;\n" +
             "} );";
-    
-        monaco.editor.create( document.getElementById( containerId ), {
+
+        let editorObject = monaco.editor.create( containerElement, {
             "value": codeText,
             "language": 'javascript',
             "theme": "myCustomTheme",
                 "fontSize": "14px",
                 "bracketPairColorization.enabled": true
         } );
+
+        resize();
+        window.addEventListener( "resize", resize );
+
+        function resize() {
+            editorObject.layout();
+        }
     }
 }();
