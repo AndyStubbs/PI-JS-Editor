@@ -8,8 +8,12 @@ require( [ "vs/editor/editor.main" ], function () {
 } );
 
 var editor = function () {
+    let editors = [];
+    window.addEventListener( "resize", resize );
+    
     return {
-        "create": create
+        "create": create,
+        "resize": resize
     };
 
     function create( containerElement ) {
@@ -50,11 +54,12 @@ var editor = function () {
                 "bracketPairColorization.enabled": true
         } );
 
-        resize();
-        window.addEventListener( "resize", resize );
+        editors.push( editorObject );
+    }
 
-        function resize() {
-            editorObject.layout();
+    function resize() {
+        for( let i = 0; i < editors.length; i++ ) {
+            editors[ i ].layout();    
         }
     }
 }();
