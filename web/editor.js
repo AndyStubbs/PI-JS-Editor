@@ -7,7 +7,7 @@ require( [ "vs/editor/editor.main" ], function () {
     editor.create( document.querySelector( ".main-editor" ) );
 } );
 
-var editor = function () {
+var editor = ( function () {
     let editors = [];
     window.addEventListener( "resize", resize );
     
@@ -62,4 +62,4 @@ var editor = function () {
             editors[ i ].layout();    
         }
     }
-}();
+} )();
