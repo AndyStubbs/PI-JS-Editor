@@ -2,6 +2,8 @@ html, body {
     height: 100%;
     margin: 0;
     overflow: hidden;
+    background-color: rgb(30, 30, 30);
+    color: rgb(225, 225, 225);
 }
 
 .disable-select {
@@ -11,14 +13,23 @@ html, body {
     user-select: none;
 }
 
-.editor {
-    position: absolute;
+.header {
+    background-color: rgb(37, 37, 37);
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+.header span {
+    margin: 2px 4px;
+    cursor: pointer;
 }
 
 .body {
     position: absolute;
     width: 100%;
-    height: 100%;
+    height: calc(100% - 20px);
     margin: 0;
     padding: 0;
     font-size: 0;
@@ -30,25 +41,54 @@ html, body {
     overflow: auto;
     background-color: rgb(37, 37, 37);
     height: 100%;
+    font-size: 14px;
+}
+
+.files span {
+    display: block;
+    margin-bottom: 2px;
+    padding: 4px;
 }
 
 .resize {
     display: inline-block;
-    background-color: rgb(30, 30, 30);
     width: 6px;
     cursor: e-resize;
     height: 100%;
 }
 
 .resize div {
-    background-color: white;
+    background-color: rgb(125, 125, 125);
     width: 2px;
     margin-left: 2px;
     height: 100%;
 }
 
 .main-editor {
+    position: absolute;
     display: inline-block;
     width: calc(100% - 307px);
     height: 100%;
+}
+
+.main-editor-tabs {
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+}
+
+.main-editor-tabs span {
+    display: inline-block;
+    background-color: rgb(37, 37, 37);
+    padding: 4px;
+    min-width: 75px;
+    font-size: 14px;
+    margin: 0 2px;
+    cursor: pointer;
+}
+
+.main-editor-body {
+    width: 100%;
+    height: calc(100% - 20px);
 }

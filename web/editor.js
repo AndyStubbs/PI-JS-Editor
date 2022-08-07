@@ -4,7 +4,7 @@
 require.config( { paths: { vs: "monaco-editor/min/vs" } } );
 
 require( [ "vs/editor/editor.main" ], function () {
-    editor.create( document.querySelector( ".main-editor" ) );
+    editor.create( document.querySelector( ".main-editor-body" ) );
 } );
 
 var editor = ( function () {
