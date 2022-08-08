@@ -44,10 +44,13 @@ html, body {
     font-size: 14px;
 }
 
-.files span {
-    display: block;
-    margin-bottom: 2px;
-    padding: 4px;
+.files ul {
+    padding-left: 4px;
+}
+
+.files li {
+    list-style-type: none;
+    padding: 0 2px;
 }
 
 .resize {
