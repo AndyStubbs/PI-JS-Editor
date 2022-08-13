@@ -1,9 +1,16 @@
 var file = ( function () {
+    const OPEN_FOLDER_ENTITY = "&darr;";
+    const CLOSED_FOLDER_ENTITY = "&rarr;"
+    const FILE_TYPE_FOLDER = "folder";
+    const FILE_TYPE_HTML = "html";
+    const FILE_TYPE_STYLE = "stylesheet";
+    const FILE_TYPE_SCRIPT = "javascript";
 
     let files = [
         {
             "name": "index.html",
-            "type": "html",
+            "type": FILE_TYPE_HTML,
+            "isOpen": true,
             "content": "" +
             "<!DOCTYPE html>" +
                 "<html lang=\"en\">" +
@@ -19,11 +26,11 @@ var file = ( function () {
         },
         {
             "name": "src",
-            "type": "folder",
+            "type": FILE_TYPE_FOLDER,
             "content": [
                 {
                     "name": "main.js",
-                    "type": "javascript",
+                    "type": FILE_TYPE_SCRIPT,
                     "content": "" +
                         "$.screen( \"300x200\" );\n" +
                         "$.circle( 150, 100, 50, \"red\" );\n" +
@@ -38,7 +45,7 @@ var file = ( function () {
                 },
                 {
                     "name": "style.css",
-                    "type": "stylesheet",
+                    "type": FILE_TYPE_STYLE,
                     "content": "" +
                         "html, body {" +
                             "height: 100%;" +
@@ -51,28 +58,87 @@ var file = ( function () {
             ]
         }
     ];
-    
+    let fileLookup = {};
+    let lastFileId = 0;
+
     return {
         "init": init
     };
 
     function init() {
-        initFolder( document.querySelector( ".body > .files" ), files );
+        let filesElement = document.querySelector( ".body > .files" );
+        initFolder( filesElement, files );
+        filesElement.addEventListener( "click", clickFiles );
     }
 
     function initFolder( parentFolder, folder ) {
         let ul = document.createElement( "ul" );
         for( let i = 0; i < folder.length; i++ ) {
+            let fileId = ++lastFileId;
+            fileLookup[ fileId ] = folder[ i ];
             let li = document.createElement( "li" );
-            li.innerText = folder[ i ].name;
-            if( folder[ i ].type === "folder" ) {
-                li.innerText += " >";
+            let span = document.createElement( "span" );
+            li.appendChild( span );
+            li.dataset.fileType = folder[ i ].type;
+            li.dataset.fileClickable = true;
+            li.dataset.fileId = fileId;
+
+            if( folder[ i ].type === FILE_TYPE_FOLDER ) {
+                updateFolderName( li, folder[ i ], true );
                 initFolder( li, folder[ i ].content );
+            } else {
+                span.innerText = folder[ i ].name;
             }
             ul.appendChild( li );
         }
         parentFolder.appendChild( ul );
     }
+
+    function updateFolderName( element, file, isOpen ) {
+        if( isOpen ) {
+            element.firstElementChild.innerHTML = OPEN_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.name;
+        } else {
+            element.firstElementChild.innerHTML = CLOSED_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.name;
+        }
+    }
+
+    function selectFile( element, file ) {
+
+        // Remove previously selected files
+        document.querySelectorAll( ".selected-file" ).forEach(
+            ( el ) => el.classList.remove( "selected-file" )
+        );
+
+        element.classList.add( "selected-file" );
+    }
+
+    function clickFiles( e ) {
+
+        // Make sure we are clicking on a file or folder
+        let target = e.target;
+        while( target !== this && ! target.dataset.fileClickable ) {
+            target = target.parentElement;
+        }
+        if( target === this ) {
+            return;
+        }
+
+        selectFile( target );
+
+        // Toggle the folder Open/Closed
+        if( target.dataset.fileType === FILE_TYPE_FOLDER ) {
+            let ul = target.children[ 1 ];
+            let file = fileLookup[ target.dataset.fileId ];
+            if( ul.style.display === "none" ) {
+                ul.style.display = "";
+                updateFolderName( target, file, true );
+            } else {
+                ul.style.display = "none";
+                updateFolderName( target, file, false );
+            }
+        }
+    }
+
 } )();
 
 file.init();

@@ -42,15 +42,23 @@ html, body {
     background-color: rgb(37, 37, 37);
     height: 100%;
     font-size: 14px;
+    padding-top: 10px;
 }
 
 .files ul {
     padding-left: 4px;
+    margin: 0;
 }
 
 .files li {
     list-style-type: none;
     padding: 0 2px;
+    border: 1px solid rgba(0,0,0,0);
+}
+
+.files li.selected-file {
+    border: 1px solid rgb(75, 175, 255);
+    background-color: rgb(25, 25, 125);
 }
 
 .resize {
