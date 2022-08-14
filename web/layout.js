@@ -1,3 +1,4 @@
+"use strict";
 var layout = ( function () {
     return {
         "createHorizontalResize": createHorizontalResize
@@ -34,9 +35,3 @@ var layout = ( function () {
     }
 
 } )();
-
-layout.createHorizontalResize(
-    document.querySelector( ".files"),
-    document.querySelector( ".resize" ),
-    document.querySelector( ".main-editor" )
-);
