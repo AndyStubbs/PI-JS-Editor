@@ -1,129 +1,129 @@
 html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    background-color: rgb(30, 30, 30);
-    color: rgb(225, 225, 225);
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	background-color: rgb(30, 30, 30);
+	color: rgb(225, 225, 225);
 }
 
 .disable-select {
-    -webkit-user-select: none;  
-    -moz-user-select: none;    
-    -ms-user-select: none;      
-    user-select: none;
+	-webkit-user-select: none;  
+	-moz-user-select: none;    
+	-ms-user-select: none;      
+	user-select: none;
 }
 
 .header {
-    background-color: rgb(57, 57, 57);
-    width: 100%;
-    height: 20px;
-    margin: 0;
-    padding: 0;
+	background-color: rgb(57, 57, 57);
+	width: 100%;
+	height: 20px;
+	margin: 0;
+	padding: 0;
 }
 
 .header span {
-    margin: 2px 4px;
-    cursor: pointer;
+	margin: 2px 4px;
+	cursor: pointer;
 }
 
 .body {
-    position: absolute;
-    width: 100%;
-    height: calc(100% - 20px);
-    margin: 0;
-    padding: 0;
-    font-size: 0;
+	position: absolute;
+	width: 100%;
+	height: calc(100% - 20px);
+	margin: 0;
+	padding: 0;
+	font-size: 0;
 }
 
 .files {
-    display: inline-block;
-    width: 300px;
-    overflow: auto;
-    background-color: rgb(30, 30, 30);
-    height: 100%;
-    font-size: 14px;
-    padding-top: 10px;
+	display: inline-block;
+	width: 300px;
+	overflow: auto;
+	background-color: rgb(30, 30, 30);
+	height: 100%;
+	font-size: 14px;
+	padding-top: 10px;
 }
 
 .files ul {
-    padding-left: 4px;
-    margin: 0;
+	padding-left: 4px;
+	margin: 0;
 }
 
 .files li {
-    list-style-type: none;
-    padding: 0 2px;
-    border: 1px solid rgba(0,0,0,0);
-    cursor: pointer;
+	list-style-type: none;
+	padding: 0 2px;
+	border: 1px solid rgba(0,0,0,0);
+	cursor: pointer;
 }
 
 .files li.selected-file {
-    border: 1px solid rgb(75, 175, 255);
-    background-color: rgb(25, 25, 125);
+	border: 1px solid rgb(75, 175, 255);
+	background-color: rgb(25, 25, 125);
 }
 
 .resize {
-    display: inline-block;
-    width: 6px;
-    cursor: e-resize;
-    height: 100%;
+	display: inline-block;
+	width: 6px;
+	cursor: e-resize;
+	height: 100%;
 }
 
 .resize div {
-    background-color: rgb(125, 125, 125);
-    width: 2px;
-    margin-left: 2px;
-    height: 100%;
+	background-color: rgb(125, 125, 125);
+	width: 2px;
+	margin-left: 2px;
+	height: 100%;
 }
 
 .main-editor {
-    position: absolute;
-    display: inline-block;
-    width: calc(100% - 307px);
-    height: 100%;
+	position: absolute;
+	display: inline-block;
+	width: calc(100% - 307px);
+	height: 100%;
 }
 
 .main-editor-tabs {
-    width: 100%;
-    height: 20px;
-    margin: 0;
-    padding: 0;
-    background-color: rgb(57, 57, 57);
+	width: 100%;
+	height: 20px;
+	margin: 0;
+	padding: 0;
+	background-color: rgb(57, 57, 57);
 }
 
 .main-editor-tabs div {
-    display: inline-block;
-    padding: 4px;
-    min-width: 100px;
-    font-size: 14px;
-    margin: 0 1px 0 0;
-    cursor: pointer;
+	display: inline-block;
+	padding: 4px;
+	min-width: 100px;
+	font-size: 14px;
+	margin: 0 1px 0 0;
+	cursor: pointer;
 }
 
 .main-editor-tabs div.selected-tab {
-    background-color: rgb(30, 30, 30);
+	background-color: rgb(30, 30, 30);
 }
 
 .main-editor-tabs input[type="button"] {
-    color: rgb(255,0,0);
-    background-color: rgba(0,0,0,0);
-    border: none;
-    width: 15px;
-    height: 15px;
-    padding: 0;
-    float: right;
-    line-height: 12px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 3px;
-    transition-duration: 0.5s;
+	color: rgb(255,0,0);
+	background-color: rgba(0,0,0,0);
+	border: none;
+	width: 15px;
+	height: 15px;
+	padding: 0;
+	float: right;
+	line-height: 12px;
+	font-size: 12px;
+	cursor: pointer;
+	border-radius: 3px;
+	transition-duration: 0.5s;
 }
 
 .main-editor-tabs input[type="button"]:hover {
-    background-color: rgb(0, 0, 0);
+	background-color: rgb(0, 0, 0);
 }
 
 .main-editor-body {
-    width: 100%;
-    height: calc(100% - 20px);
+	width: 100%;
+	height: calc(100% - 20px);
 }
