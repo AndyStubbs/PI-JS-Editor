@@ -64,7 +64,6 @@ var file = ( function () {
 	];
 	let fileLookup = {};
 	let lastFileId = 0;
-	let tabDrag = null;
 
 	return {
 		"init": init
@@ -74,12 +73,11 @@ var file = ( function () {
 		let filesElement = document.querySelector( ".body > .files" );
 		initFolder( filesElement, files );
 		filesElement.addEventListener( "click", clickFiles );
-		let tabsElement = document.querySelector( ".main-editor-tabs" );
-		tabsElement.addEventListener( "click", clickTabs );
-		tabsElement.addEventListener( "mousedown", mousedownTabs );
-		tabsElement.addEventListener( "mousemove", mousemoveTabs );
-		window.addEventListener( "mouseup", mouseupWindow );
-		window.addEventListener( "blur", mouseupWindow );
+		layout.createTabsElement( document.querySelector( ".main-editor-tabs" ), function ( tab ) {
+			let file = fileLookup[ tab.dataset.fileId ];
+			util.selectItem( tab, "selected-tab" );
+			editor.setModel( file.model );
+		} );
 	}
 
 	function initFolder( parentFolder, folder ) {
@@ -111,25 +109,7 @@ var file = ( function () {
 
 	function openFile( file ) {
 		let tabsContainer = document.querySelector( ".main-editor-tabs" );
-		let existingTab = tabsContainer.querySelector( ".tab-"+ file.id );
-		if( existingTab ) {
-			selectItem( existingTab, "selected-tab" );
-		} else {
-			let newTab = document.createElement( "div" );
-			let tabTitle = document.createElement( "span" );
-			let tabClose = document.createElement( "input" );
-			tabClose.type = "button";
-			tabClose.dataset.clickable = true;
-			tabClose.value = "X";
-			newTab.dataset.clickable = true;
-			newTab.append( tabTitle );
-			newTab.append( tabClose );
-			newTab.className = "tab-" + file.id + " disable-select";            
-			tabTitle.innerText = file.name;
-			newTab.dataset.fileId = file.id;
-			tabsContainer.append( newTab );
-			selectItem( newTab, "selected-tab" );
-		}
+		layout.createTab( tabsContainer, file );
 		if( !file.model ) {
 			file.model = editor.createModel( file.content, file.type );
 		}
@@ -144,33 +124,14 @@ var file = ( function () {
 		}
 	}
 
-	function selectItem( element, className ) {
-		document.querySelectorAll( "." + className ).forEach(
-			( el ) => el.classList.remove( className )
-		);
-
-		element.classList.add( className );
-	}
-
-	// Make sure we are clicking on a file or folder
-	function getClickableTarget( target, container ) {
-		while( target && target !== container && ! target.dataset.clickable ) {
-			target = target.parentElement;
-		}
-		if( target === container ) {
-			return null;
-		}
-		return target;
-	}
-
 	function clickFiles( e ) {
 		// Make sure we are clicking on a file or folder
-		let target = getClickableTarget( e.target, this );
+		let target = util.getClickableTarget( e.target, this );
 		if( ! target ) {
 			return;
 		}
 
-		selectItem( target, "selected-file" );
+		util.selectItem( target, "selected-file" );
 		let file = fileLookup[ target.dataset.fileId ];
 
 		// Toggle the folder Open/Closed
@@ -186,65 +147,6 @@ var file = ( function () {
 		} else {
 			openFile( file );
 		}
-	}
-
-	function clickTabs( e ) {
-		let target = getClickableTarget( e.target, this );
-		if( ! target ) {
-			return;
-		}
-
-		// Check if close button clicked
-		if( target.type === "button" ) {
-			let tab = target.parentElement;
-			// If selected tab then find a new tab to open
-			if( tab.classList.contains( "selected-tab" ) ) {
-				let nearestTab;
-				if( tab.previousElementSibling ) {
-					nearestTab = tab.previousElementSibling;
-				} else {
-					nearestTab = tab.nextElementSibling;
-				}
-				if( nearestTab ) {
-					let file = fileLookup[ nearestTab.dataset.fileId ];
-					selectItem( nearestTab, "selected-tab" );
-					editor.setModel( file.model );
-				} else {
-					editor.setModel( null );
-				}
-			}
-			tab.parentElement.removeChild( tab );
-		}
-	}
-
-	function mousedownTabs( e ) {
-		tabDrag = getClickableTarget( e.target, this );
-		if( tabDrag && tabDrag.type !== "button" ) {
-			let file = fileLookup[ tabDrag.dataset.fileId ];
-			selectItem( tabDrag, "selected-tab" );
-			editor.setModel( file.model );
-		} else {
-			tabDrag = null;
-		}
-	}
-
-	function mousemoveTabs( e ) {
-		if( tabDrag ) {
-			let tabUnderMouse = getClickableTarget( document.elementFromPoint( e.pageX, e.pageY ), this );
-			if( tabUnderMouse && tabUnderMouse.type !== "button" && tabUnderMouse !== tabDrag ) {
-				let tabUnderMouseRect = tabUnderMouse.getBoundingClientRect();
-				let tabDragRect = tabDrag.getBoundingClientRect();
-				if( tabDragRect.left > tabUnderMouseRect.right ) {
-					this.insertBefore( tabDrag, tabUnderMouse );
-				} else {
-					this.insertBefore( tabUnderMouse, tabDrag );
-				}
-			}
-		}
-	}
-
-	function mouseupWindow() {
-		tabDrag = null;
 	}
 
 } )();
