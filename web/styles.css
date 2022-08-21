@@ -16,14 +16,44 @@ html, body {
 .header {
 	background-color: rgb(57, 57, 57);
 	width: 100%;
-	height: 20px;
 	margin: 0;
-	padding: 0;
+	padding: 0 0 0 15px;
 }
 
-.header span {
-	margin: 2px 4px;
+.menu-item {
+	padding: 5px 10px;
 	cursor: pointer;
+}
+
+.menu-item:hover {
+	background-color: rgb(25, 25, 125);
+	color: white;
+}
+
+.submenu {
+	position: absolute;
+	min-width: 150px;
+	background-color: rgb(57, 57, 57);
+	padding: 0;
+	margin: 0;
+}
+
+.submenu .submenu-item  {
+	cursor: pointer;
+	padding: 5px;
+}
+
+.subitem-title {
+	padding-right: 10px;
+}
+
+.shortcut {
+	float: right;
+}
+
+.submenu .submenu-item:hover {
+	background-color: rgb(25, 25, 125);
+	color: white;
 }
 
 .body {
@@ -42,7 +72,7 @@ html, body {
 	background-color: rgb(30, 30, 30);
 	height: 100%;
 	font-size: 14px;
-	padding-top: 10px;
+	padding: 0 0 0 15px;
 }
 
 .files ul {
@@ -67,6 +97,7 @@ html, body {
 	width: 6px;
 	cursor: e-resize;
 	height: 100%;
+	vertical-align: top;
 }
 
 .resize div {

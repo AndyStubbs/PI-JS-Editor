@@ -3,7 +3,8 @@ var layout = ( function () {
 	return {
 		"createHorizontalResize": createHorizontalResize,
 		"createTabsElement": createTabsElement,
-		"createTab": createTab
+		"createTab": createTab,
+		"createMenu": createMenu
 	};
 
 	function createHorizontalResize( leftElement, resizeElement, rightElement ) {
@@ -120,6 +121,55 @@ var layout = ( function () {
 			newTab.dataset.fileId = tabData.id;
 			tabsContainer.append( newTab );
 			util.selectItem( newTab, "selected-tab" );
+		}
+	}
+
+	function createMenu( items, menuContainer ) {
+		let submenu = document.createElement( "div" );
+		let isOpenThisThread = false;
+		submenu.classList.add( "submenu" );
+		submenu.style.display = "none";
+		document.body.appendChild( submenu );
+		window.addEventListener( "mousedown", mouseDown );
+		window.addEventListener( "blur", mouseDown );
+
+		for( let i = 0; i < items.length; i++ ) {
+			let item = items[ i ];
+			let element = document.createElement( "span" );
+			element.classList.add( "menu-item" );
+			element.innerText = item.name;
+			element.dataset.index = i;
+			element.addEventListener( "mousedown", openSubMenu );
+			menuContainer.appendChild( element );
+		}
+
+		function openSubMenu() {
+			submenu.innerText = "";
+			let index = this.dataset.index;
+			let item = items[ index ];
+			for( let i = 0; i < item.subItems.length; i++ ) {
+				let subItem = item.subItems[ i ];
+				let submenuItem = document.createElement( "div" );
+				submenuItem.innerHTML = "<span class='subitem-title'>" + subItem.name + "</span>" +
+					"<span class='shortcut'>" + subItem.shortcut + "</span>";
+				submenuItem.classList.add( "submenu-item" );
+				submenuItem.addEventListener( "click", subItem.command );
+				submenu.appendChild( submenuItem );
+			}
+			let rect = this.getBoundingClientRect();
+			submenu.style.top = ( rect.bottom - 5 ) + "px";
+			submenu.style.left = rect.left + "px";
+			submenu.style.display = "";
+			isOpenThisThread = true;
+			setTimeout( function () {
+				isOpenThisThread = false;
+			}, 0 );
+		}
+
+		function mouseDown() {
+			if( !isOpenThisThread ) {
+				submenu.style.display = "none";
+			}
 		}
 	}
 

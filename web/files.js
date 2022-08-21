@@ -65,6 +65,9 @@ var file = ( function () {
 	let fileLookup = {};
 	let lastFileId = 0;
 
+	main.addMenuItem( "File", "Create new file", "Ctrl+N", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Upload new file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
+
 	return {
 		"init": init
 	};

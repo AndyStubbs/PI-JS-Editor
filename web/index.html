@@ -6,9 +6,7 @@
 		<link rel="stylesheet" href="styles.css">
 	</head>
 	<body>
-		<div class="header disable-select">
-			<span>File</span><span>Edit</span><span>Selection</span>
-		</div>
+		<div class="header disable-select"></div>
 		<div class="body">
 			<div class="files disable-select" ondragstart="return false;"></div>
 			<div class="resize disable-select" ondragstart="return false;"><div></div></div>
@@ -17,11 +15,11 @@
 				<div class="main-editor-body"></div>
 			</div>
 		</div>
+		<script src="monaco-editor/min/vs/loader.js"></script>
 		<script src="util.js"></script>
 		<script src="main.js"></script>
-		<script src="monaco-editor/min/vs/loader.js"></script>
-		<script src="editor.js"></script>
 		<script src="layout.js"></script>
 		<script src="files.js"></script>
+		<script src="editor.js"></script>
 	</body>
 </html>
