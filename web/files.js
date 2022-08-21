@@ -66,7 +66,9 @@ var file = ( function () {
 	let lastFileId = 0;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+N", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "File", "Upload new file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Copy file", "Ctrl+C", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Create a new file." ) } );
 
 	return {
 		"init": init
