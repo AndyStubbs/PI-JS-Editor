@@ -9,7 +9,15 @@ var file = ( function () {
 	const FILE_TYPE_HTML = "html";
 	const FILE_TYPE_STYLE = "css";
 	const FILE_TYPE_SCRIPT = "javascript";
-
+	const FILE_TYPES = [
+		FILE_TYPE_SCRIPT, FILE_TYPE_FOLDER, FILE_TYPE_HTML, FILE_TYPE_STYLE
+	];
+	const FILE_TYPE_EXTENSIONS = {
+		"javascript": ".js",
+		"folder": "",
+		"html": ".html",
+		"css": ".css"
+	};
 	let files = [
 		{
 			"name": "index.html",
@@ -65,9 +73,9 @@ var file = ( function () {
 	let fileLookup = {};
 	let lastFileId = 0;
 
-	main.addMenuItem( "File", "Create new file", "Ctrl+N", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Create new file", "Ctrl+N", createNewFileDialog );
 	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "File", "Copy file", "Ctrl+C", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Edit file", "Ctrl+E", function () { console.log( "Create a new file." ) } );
 	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Create a new file." ) } );
 
 	return {
@@ -76,7 +84,8 @@ var file = ( function () {
 
 	function init() {
 		let filesElement = document.querySelector( ".body > .files" );
-		initFolder( filesElement, files );
+		initFiles( files );
+		createFileView( filesElement, files );
 		filesElement.addEventListener( "click", clickFiles );
 		layout.createTabsElement( document.querySelector( ".main-editor-tabs" ), function ( tab ) {
 			let file = fileLookup[ tab.dataset.fileId ];
@@ -85,31 +94,46 @@ var file = ( function () {
 		} );
 	}
 
-	function initFolder( parentFolder, folder ) {
+	function initFiles( parentFolder ) {
+		for( let i = 0; i < parentFolder.length; i++ ) {
+			let file = parentFolder[ i ];
+			createFile( file, parentFolder );
+			if( file.type === FILE_TYPE_FOLDER ) {
+				initFiles( file.content );
+			}
+		}
+	}
+
+	function createFile( file, parentFolder ) {
+		let fileId = ++lastFileId;
+		file.id = fileId;
+		file.parent = parentFolder;
+		fileLookup[ fileId ] = file;
+	}
+
+	function createFileView( element, folder ) {
 		let ul = document.createElement( "ul" );
 		for( let i = 0; i < folder.length; i++ ) {
-			let fileId = ++lastFileId;
-			folder[ i ].id = fileId;
-			fileLookup[ fileId ] = folder[ i ];
+			let file = folder[ i ];
 			let li = document.createElement( "li" );
 			let span = document.createElement( "span" );
 			li.appendChild( span );
-			li.dataset.fileType = folder[ i ].type;
+			li.dataset.fileType = file.type;
 			li.dataset.clickable = true;
-			li.dataset.fileId = fileId;
+			li.dataset.fileId = file.id;
 
-			if( folder[ i ].type === FILE_TYPE_FOLDER ) {
-				updateFolderName( li, folder[ i ], true );
-				initFolder( li, folder[ i ].content );
+			if( file.type === FILE_TYPE_FOLDER ) {
+				updateFolderName( li, file, true );
+				createFileView( li, file.content );
 			} else {
-				span.innerText = folder[ i ].name;
-				if( folder[ i ].isOpen ) {
-					openFile( folder[ i ] );
+				span.innerText = file.name;
+				if( file.isOpen ) {
+					openFile( file );
 				}
 			}
 			ul.appendChild( li );
 		}
-		parentFolder.appendChild( ul );
+		element.appendChild( ul );
 	}
 
 	function openFile( file ) {
@@ -152,6 +176,100 @@ var file = ( function () {
 		} else {
 			openFile( file );
 		}
+	}
+
+	function getFolders( name, folderContents, folderArray ) {
+		folderArray.push( name );
+		for( let i = 0; i < folderContents.length; i++ ) {
+			if( folderContents[ i ].type === FILE_TYPE_FOLDER ) {
+				getFolders( name + "/" + folderContents[ i ].name, folderContents[ i ].content, folderArray );
+			}
+		}
+	}
+
+	function findFolderByName( name, folderContents ) {
+		if( name === "root" ) {
+			return files;
+		}
+		for( let i = 0; i < folderContents.length; i++ ) {
+			if( folderContents[ i ].type === FILE_TYPE_FOLDER ) {
+				if( folderContents[ i ].name === name ) {
+					return folderContents[ i ].content;
+				}
+				let folder = findFolderByName( name, folderContents[ i ].content );
+				if( folder ) {
+					return folder;
+				}
+			}
+		}
+		return null;
+	}
+
+	function findFolderByPath( path ) {
+		let parts = path.split( "/" );
+		let folder = files;
+		for( let i = 0; i < parts.length; i++ ) {
+			folder = findFolderByName( parts[ i ], folder );
+			if( ! folder ) {
+				return  null;
+			}
+		}
+		return folder;
+	}
+
+	function createNewFileDialog() {
+		let popup = document.querySelector( ".popup" );
+		if( popup ) {
+			popup.focus();
+			return;
+		}
+		let div = document.createElement( "div" );
+
+		let typeOptions = "";
+		for( let i = 0; i < FILE_TYPES.length; i++ ) {
+			typeOptions += "<option>" + FILE_TYPES[ i ] + "</option>";
+		}
+
+		let folders = [];
+		getFolders( "root", files, folders );
+		let folderOptions = "";
+		for( let i = 0; i < folders.length; i++ ) {
+			folderOptions += "<option>" + folders[ i ] + "</option>";
+		}
+		div.className = "new-file-popup";
+		div.innerHTML = "<p>" +
+			"<span>File Type:</span>&nbsp;&nbsp;" +
+			"<select id='new-file-language'>" + typeOptions + "</select>" +
+			"</p><p>" +
+			"<span>File Name:</span>&nbsp;&nbsp;" +
+			"<input id='new-file-name' type='text' value='untitled' /> .js" + 
+			"</p><p>" +
+			"<span>Folder:</span>&nbsp;&nbsp;" +
+			"<select id='new-file-folder'>" + folderOptions + "</select>" +
+			"</p>";
+		layout.createPopup( "Create New File", div,
+			function () {
+				let language = div.querySelector( "#new-file-language" ).value;
+				let name = div.querySelector( "#new-file-name" ).value;
+				let folderPath = div.querySelector( "#new-file-folder" ).value;
+				let parentFolder = findFolderByPath( folderPath );
+				let content = "";
+				if( language === FILE_TYPE_FOLDER ) {
+					content = [];
+				}
+				let file = {
+					"name": name + FILE_TYPE_EXTENSIONS[ language ],
+					"type": language,
+					"content": content
+				};
+				parentFolder.push( file );
+				createFile( file, parentFolder );
+				let filesElement = document.querySelector( ".body > .files" );
+				filesElement.innerText = "";
+				createFileView( filesElement, files );
+			},
+			function () { } 
+		);
 	}
 
 } )();

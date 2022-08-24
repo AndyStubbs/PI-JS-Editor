@@ -135,7 +135,57 @@ html, body {
 	background-color: rgb(30, 30, 30);
 }
 
-.main-editor-tabs input[type="button"] {
+.main-editor-body {
+	width: 100%;
+	height: calc(100% - 20px);
+}
+
+.popup {
+	position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgb(57,57,57);
+    padding: 5px 20px;
+    border: 2px solid gray;
+    border-radius: 10px;
+}
+
+.popup-title {
+	margin-bottom: 10px;
+}
+
+.popup-title span {
+	font-weight: bold;
+}
+
+.popup-title .popup-close {
+	float: right;
+}
+
+.popup-footer {
+	margin-top: 10px;
+	float: right;
+}
+
+.button {
+	background-color: rgb(125, 125, 125);
+	border: none;
+	color: white;
+	padding: 5px 8px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	border-radius: 5px;
+	margin-left: 5px;
+    width: 58px;
+}
+
+.button:hover {
+	opacity: 0.75;
+}
+
+.close-button {
 	color: rgb(255,0,0);
 	background-color: rgba(0,0,0,0);
 	border: none;
@@ -143,18 +193,28 @@ html, body {
 	height: 15px;
 	padding: 0;
 	float: right;
-	line-height: 12px;
-	font-size: 12px;
 	cursor: pointer;
 	border-radius: 3px;
 	transition-duration: 0.5s;
 }
 
-.main-editor-tabs input[type="button"]:hover {
+.close-button:hover {
 	background-color: rgb(0, 0, 0);
 }
 
-.main-editor-body {
-	width: 100%;
-	height: calc(100% - 20px);
+.new-file-popup p {
+	margin: 5px 0;
+}
+
+.new-file-popup span {
+	display: inline-block;
+	width: 90px;
+}
+
+.new-file-popup select {
+	width: 120px;
+}
+
+.new-file-popup input {
+	width: 100px;
 }
