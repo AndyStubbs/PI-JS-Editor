@@ -15,6 +15,9 @@ var layout = ( function () {
 
 		let isMouseDown = false;
 		let oldCursor;
+		let resizeElementWidth = resizeElement.getBoundingClientRect().width;
+		let resizeMiddlePosition = resizeElementWidth / 2;
+		const CURSOR_WIDTH = 15;
 
 		function mouseDown() {
 			isMouseDown = true;
@@ -24,10 +27,9 @@ var layout = ( function () {
 	
 		function mouseMove( e ) {
 			if( isMouseDown ) {
-				let resizeRect = resizeElement.getBoundingClientRect();
-				let width = e.pageX;
-				leftElement.style.width = width + "px";
-				rightElement.style.width = "calc(100% - " + ( resizeRect.width + width ) + "px)";
+				let leftElementWidth = e.pageX - resizeMiddlePosition - CURSOR_WIDTH;
+				leftElement.style.width = leftElementWidth + "px";
+				rightElement.style.width = "calc(100% - " + ( leftElementWidth + resizeElementWidth ) + "px)";
 				editor.resize();
 			}
 		}
