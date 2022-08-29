@@ -217,19 +217,18 @@ var layout = ( function () {
 		} );
 
 		function okPopup() {
-			if( okCommand ) {
-				let temp = okCommand;
-				okCommand = null;
-				temp();
+			let success = true;
+			if( okCommand ) {				
+				success = okCommand();
 			}
-			document.body.removeChild( popup );
+			if( success ) {
+				document.body.removeChild( popup );
+			}
 		}
 
 		function closePopup() {
 			if( cancelCommand ) {
-				let temp = cancelCommand;
-				cancelCommand = null;
-				temp();
+				cancelCommand();
 			}
 			document.body.removeChild( popup );
 		}

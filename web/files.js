@@ -18,58 +18,65 @@ var file = ( function () {
 		"html": ".html",
 		"css": ".css"
 	};
-	let files = [
-		{
-			"name": "index.html",
-			"type": FILE_TYPE_HTML,
-			"isOpen": true,
-			"content": "" +
-			"<!DOCTYPE html>\n\t" +
-				"<html lang=\"en\">\n\t" +
-				"<head>\n\t\t" +
-					"<title>My Game</title>\n\t\t" +
-					"<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />\n\t\t" +
-					"<link rel=\"stylesheet\" href=\"styles.css\">\n\t" +
-				"</head>\n\t" +
-				"<body>\n\t\t" +
-					"<script src=\"main.js\"></script>\n\t" +
-				"</body>\n" +
-			"</html>"
-		},
-		{
-			"name": "src",
-			"type": FILE_TYPE_FOLDER,
-			"content": [
-				{
-					"name": "main.js",
-					"type": FILE_TYPE_SCRIPT,
-					"content": "" +
-						"$.screen( \"300x200\" );\n" +
-						"$.circle( 150, 100, 50, \"red\" );\n" +
-						"// This is a comment.\n" +
-						"$.filterImg( function ( color, x, y ) {\n\t" +
-						"let z = x + y;\n\t"+
-						"color.r = color.r - Math.round( Math.tan( z / 10 ) * 128 );\n\t" +
-						"color.g = color.g + Math.round( Math.cos( x / 7 ) * 128 );\n\t" +
-						"color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );\n\t" +
-						"return color;\n" +
-						"} );"
-				},
-				{
-					"name": "style.css",
-					"type": FILE_TYPE_STYLE,
-					"content": "" +
-						"html, body {\n\t" +
-							"height: 100%;\n\t" +
-							"margin: 0;\n\t" +
-							"overflow: hidden;\n\t" +
-							"background-color: rgb(30, 30, 30);\n\t" +
-							"color: rgb(225, 225, 225);\n" +
-						"}"
-				}
-			]
-		}
-	];
+	const ROOT_NAME = "root";
+
+	let m_files = { 
+		"name": ROOT_NAME,
+		"type": FILE_TYPE_FOLDER,
+		"content": [
+			{
+				"name": "index.html",
+				"type": FILE_TYPE_HTML,
+				"isOpen": true,
+				"content": "" +
+				"<!DOCTYPE html>\n\t" +
+					"<html lang=\"en\">\n\t" +
+					"<head>\n\t\t" +
+						"<title>My Game</title>\n\t\t" +
+						"<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />\n\t\t" +
+						"<link rel=\"stylesheet\" href=\"styles.css\">\n\t" +
+					"</head>\n\t" +
+					"<body>\n\t\t" +
+						"<script src=\"main.js\"></script>\n\t" +
+					"</body>\n" +
+				"</html>"
+			},
+			{
+				"name": "src",
+				"type": FILE_TYPE_FOLDER,
+				"content": [
+					{
+						"name": "main.js",
+						"type": FILE_TYPE_SCRIPT,
+						"content": "" +
+							"$.screen( \"300x200\" );\n" +
+							"$.circle( 150, 100, 50, \"red\" );\n" +
+							"// This is a comment.\n" +
+							"$.filterImg( function ( color, x, y ) {\n\t" +
+							"let z = x + y;\n\t"+
+							"color.r = color.r - Math.round( Math.tan( z / 10 ) * 128 );\n\t" +
+							"color.g = color.g + Math.round( Math.cos( x / 7 ) * 128 );\n\t" +
+							"color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );\n\t" +
+							"return color;\n" +
+							"} );"
+					},
+					{
+						"name": "style.css",
+						"type": FILE_TYPE_STYLE,
+						"content": "" +
+							"html, body {\n\t" +
+								"height: 100%;\n\t" +
+								"margin: 0;\n\t" +
+								"overflow: hidden;\n\t" +
+								"background-color: rgb(30, 30, 30);\n\t" +
+								"color: rgb(225, 225, 225);\n" +
+							"}"
+					}
+				]
+			}
+		],
+	};
+
 	let fileLookup = {};
 	let lastFileId = 0;
 
@@ -84,8 +91,8 @@ var file = ( function () {
 
 	function init() {
 		let filesElement = document.querySelector( ".body > .files" );
-		initFiles( files );
-		createFileView( filesElement, files );
+		initFiles( m_files.content );
+		createFileView( filesElement, m_files.content );
 		filesElement.addEventListener( "click", clickFiles );
 		layout.createTabsElement( document.querySelector( ".main-editor-tabs" ), function ( tab ) {
 			let file = fileLookup[ tab.dataset.fileId ];
@@ -187,16 +194,16 @@ var file = ( function () {
 		}
 	}
 
-	function findFolderByName( name, folderContents ) {
-		if( name === "root" ) {
-			return files;
+	function findFileByName( name, folderContents, isRecursive ) {
+		if( name === ROOT_NAME ) {
+			return m_files;
 		}
 		for( let i = 0; i < folderContents.length; i++ ) {
-			if( folderContents[ i ].type === FILE_TYPE_FOLDER ) {
-				if( folderContents[ i ].name === name ) {
-					return folderContents[ i ].content;
-				}
-				let folder = findFolderByName( name, folderContents[ i ].content );
+			if( folderContents[ i ].name === name ) {
+				return folderContents[ i ];
+			}
+			if( isRecursive && folderContents[ i ].type === FILE_TYPE_FOLDER ) {
+				let folder = findFileByName( name, folderContents[ i ].content, isRecursive );
 				if( folder ) {
 					return folder;
 				}
@@ -205,11 +212,15 @@ var file = ( function () {
 		return null;
 	}
 
-	function findFolderByPath( path ) {
+	function findFileByPath( path ) {
 		let parts = path.split( "/" );
-		let folder = files;
-		for( let i = 0; i < parts.length; i++ ) {
-			folder = findFolderByName( parts[ i ], folder );
+		let folder = m_files;
+		for( let i = 0; i < parts.length; i++ ) {			
+			if( folder.type === FILE_TYPE_FOLDER ) {
+				folder = findFileByName( parts[ i ], folder.content, false );
+			} else {
+				return null;
+			}
 			if( ! folder ) {
 				return  null;
 			}
@@ -231,7 +242,7 @@ var file = ( function () {
 		}
 
 		let folders = [];
-		getFolders( "root", files, folders );
+		getFolders( ROOT_NAME, m_files.content, folders );
 		let folderOptions = "";
 		for( let i = 0; i < folders.length; i++ ) {
 			folderOptions += "<option>" + folders[ i ] + "</option>";
@@ -242,34 +253,51 @@ var file = ( function () {
 			"<select id='new-file-language'>" + typeOptions + "</select>" +
 			"</p><p>" +
 			"<span>File Name:</span>&nbsp;&nbsp;" +
-			"<input id='new-file-name' type='text' value='untitled' /> .js" + 
+			"<input id='new-file-name' type='text' value='untitled' /> <span id='new-file-extension'>.js</span>" + 
 			"</p><p>" +
 			"<span>Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" +
+			"</p><p id='new-file-message'>&nbsp;" +
+			"</p><p id='new-file-buttons'>" +
+			"<input id='new-file-create-button' class='button' type='button' value='Create' />" +
 			"</p>";
-		layout.createPopup( "Create New File", div,
-			function () {
-				let language = div.querySelector( "#new-file-language" ).value;
-				let name = div.querySelector( "#new-file-name" ).value;
-				let folderPath = div.querySelector( "#new-file-folder" ).value;
-				let parentFolder = findFolderByPath( folderPath );
-				let content = "";
-				if( language === FILE_TYPE_FOLDER ) {
-					content = [];
-				}
-				let file = {
-					"name": name + FILE_TYPE_EXTENSIONS[ language ],
-					"type": language,
-					"content": content
-				};
-				parentFolder.push( file );
-				createFile( file, parentFolder );
-				let filesElement = document.querySelector( ".body > .files" );
-				filesElement.innerText = "";
-				createFileView( filesElement, files );
-			},
-			function () { } 
-		);
+		div.querySelector( "#new-file-language" ).addEventListener( "change", function () {
+			let language = div.querySelector( "#new-file-language" ).value;
+			div.querySelector( "#new-file-language" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
+		} );
+		div.querySelector( "#new-file-create-button" ).addEventListener( "click", function () {
+			let language = div.querySelector( "#new-file-language" ).value;
+			let name = div.querySelector( "#new-file-name" ).value + FILE_TYPE_EXTENSIONS[ language ];
+			let folderPath = div.querySelector( "#new-file-folder" ).value;
+			let filePath = folderPath + "/" + name;
+			let divMsg = document.getElementById( "new-file-message" );
+
+			if( findFileByPath( filePath ) ) {
+				divMsg.classList.remove( "msg-success" );
+				divMsg.classList.add( "msg-error" );
+				divMsg.innerText =  filePath + " already exists.";
+				return false;
+			}
+			let parentFolder = findFileByPath( folderPath ).content;
+			let content = "";
+			if( language === FILE_TYPE_FOLDER ) {
+				content = [];
+			}
+			let file = {
+				"name": name,
+				"type": language,
+				"content": content
+			};
+			parentFolder.push( file );
+			createFile( file, parentFolder );
+			let filesElement = document.querySelector( ".body > .files" );
+			filesElement.innerText = "";
+			createFileView( filesElement, m_files.content );
+			divMsg.classList.remove( "msg-error" );
+			divMsg.classList.add( "msg-success" );
+			divMsg.innerText = "Created file: " + filePath;
+		} );
+		layout.createPopup( "Create New File", div );
 	}
 
 } )();
