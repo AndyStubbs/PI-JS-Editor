@@ -194,6 +194,16 @@ var file = ( function () {
 		}
 	}
 
+	function createFolderOptions() {
+		let folders = [];
+		getFolders( ROOT_NAME, m_files.content, folders );
+		let folderOptions = "";
+		for( let i = 0; i < folders.length; i++ ) {
+			folderOptions += "<option>" + folders[ i ] + "</option>";
+		}
+		return folderOptions;
+	}
+
 	function findFileByName( name, folderContents, isRecursive ) {
 		if( name === ROOT_NAME ) {
 			return m_files;
@@ -235,18 +245,12 @@ var file = ( function () {
 			return;
 		}
 		let div = document.createElement( "div" );
-
 		let typeOptions = "";
 		for( let i = 0; i < FILE_TYPES.length; i++ ) {
 			typeOptions += "<option>" + FILE_TYPES[ i ] + "</option>";
 		}
-
-		let folders = [];
-		getFolders( ROOT_NAME, m_files.content, folders );
-		let folderOptions = "";
-		for( let i = 0; i < folders.length; i++ ) {
-			folderOptions += "<option>" + folders[ i ] + "</option>";
-		}
+		let folderOptions = createFolderOptions();
+		
 		div.className = "new-file-popup";
 		div.innerHTML = "<p>" +
 			"<span>File Type:</span>&nbsp;&nbsp;" +
@@ -261,9 +265,23 @@ var file = ( function () {
 			"</p><p id='new-file-buttons'>" +
 			"<input id='new-file-create-button' class='button' type='button' value='Create' />" +
 			"</p>";
+		div.querySelector( "#new-file-name" ).addEventListener( "change", function () {
+			let unallowedCharacters = "./\\";
+			let value = this.value;
+			let changed = false;
+			for ( let i = 0; i < unallowedCharacters.length; i++ ) {
+				if( value.indexOf( unallowedCharacters[ i ] ) > -1 ) {
+					value = value.replaceAll( unallowedCharacters.charAt( i ), "" );
+					changed = true;
+				}
+			}
+			if( changed ) {
+				this.value = value;
+			}
+		} );
 		div.querySelector( "#new-file-language" ).addEventListener( "change", function () {
 			let language = div.querySelector( "#new-file-language" ).value;
-			div.querySelector( "#new-file-language" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
+			div.querySelector( "#new-file-extension" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
 		} );
 		div.querySelector( "#new-file-create-button" ).addEventListener( "click", function () {
 			let language = div.querySelector( "#new-file-language" ).value;
@@ -296,6 +314,9 @@ var file = ( function () {
 			divMsg.classList.remove( "msg-error" );
 			divMsg.classList.add( "msg-success" );
 			divMsg.innerText = "Created file: " + filePath;
+			if( language === FILE_TYPE_FOLDER ) {
+				div.querySelector( "#new-file-folder" ).innerHTML = createFolderOptions();
+			}
 		} );
 		layout.createPopup( "Create New File", div );
 	}
