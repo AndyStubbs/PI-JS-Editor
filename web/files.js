@@ -19,6 +19,12 @@ var file = ( function () {
 		"css": ".css"
 	};
 	const ROOT_NAME = "root";
+	const CLASS_NAMES = {
+		 "FILES": "files",
+		 "MAIN_EDITOR_TABS": "main-editor-tabs",
+		 "SELECTED_FILE": "selected-file",
+		 "SELECTED_TAB": "selected-tab"
+	};
 
 	let m_files = { 
 		"name": ROOT_NAME,
@@ -76,9 +82,9 @@ var file = ( function () {
 			}
 		],
 	};
-
-	let fileLookup = {};
-	let lastFileId = 0;
+	let m_fileLookup = {};
+	let m_lastFileId = 0;
+	let m_lastFileClicked;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+N", createNewFileDialog );
 	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
@@ -90,13 +96,14 @@ var file = ( function () {
 	};
 
 	function init() {
-		let filesElement = document.querySelector( ".body > .files" );
+		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
 		initFiles( m_files.content );
 		createFileView( filesElement, m_files.content );
 		filesElement.addEventListener( "click", clickFiles );
-		layout.createTabsElement( document.querySelector( ".main-editor-tabs" ), function ( tab ) {
-			let file = fileLookup[ tab.dataset.fileId ];
-			util.selectItem( tab, "selected-tab" );
+
+		layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
+			let file = m_fileLookup[ tab.dataset.fileId ];
+			util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
 			editor.setModel( file.model );
 		} );
 	}
@@ -112,10 +119,10 @@ var file = ( function () {
 	}
 
 	function createFile( file, parentFolder ) {
-		let fileId = ++lastFileId;
+		let fileId = ++m_lastFileId;
 		file.id = fileId;
 		file.parent = parentFolder;
-		fileLookup[ fileId ] = file;
+		m_fileLookup[ fileId ] = file;
 	}
 
 	function createFileView( element, folder ) {
@@ -167,8 +174,64 @@ var file = ( function () {
 			return;
 		}
 
-		util.selectItem( target, "selected-file" );
-		let file = fileLookup[ target.dataset.fileId ];
+		if( e.shiftKey && m_lastFileClicked ) {
+			selectMultipleFiles( m_lastFileClicked, target );
+		} else if( e.ctrlKey ) {
+			m_lastFileClicked = target;
+			if( target.classList.contains( CLASS_NAMES.SELECTED_FILE ) ) {
+				target.classList.remove( CLASS_NAMES.SELECTED_FILE );
+			} else {
+				target.classList.add( CLASS_NAMES.SELECTED_FILE );
+			}
+		} else {
+			m_lastFileClicked = target;
+			selectFile( target );
+		}
+	}
+
+	function selectMultipleFiles( startElement, endElement ) {
+		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
+		let startElementRect = startElement.getBoundingClientRect();
+		let endElementRect = endElement.getBoundingClientRect();
+		let top = -1;
+		let bottom = -1;
+		if( startElementRect.top < endElementRect.top ) {
+			top = startElementRect.top;
+		} else {
+			top = endElementRect.top;
+		}
+		if( startElementRect.bottom > endElementRect.bottom ) {
+			bottom = startElementRect.bottom;
+		} else {
+			bottom = endElementRect.bottom;
+		}
+		let x = startElementRect.left + startElementRect.width / 2;
+		for( let y = top; y < bottom; y += 5 ) {
+			let element = util.getClickableTarget( document.elementFromPoint( x, y ), filesElement );
+			if( element.dataset.fileType !== FILE_TYPE_FOLDER ) {
+				element.classList.add( CLASS_NAMES.SELECTED_FILE );
+			}
+		}
+
+		// Check if every element in folders are selected
+		let parentFolders = new Set();
+		document.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE ).forEach( ( element ) => {
+			parentFolders.add( element.parentElement );
+		} );
+
+		// Loop through all parent elements
+		for( let parentFolderElement of parentFolders ) {
+			let allListItems = parentFolderElement.querySelectorAll( "li" );
+			let selectedListItems = parentFolderElement.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE );
+			if( allListItems.length === selectedListItems.length ) {
+				parentFolderElement.parentElement.classList.add( CLASS_NAMES.SELECTED_FILE );
+			}
+		}
+	}
+
+	function selectFile( target ) {
+		util.selectItem( target, CLASS_NAMES.SELECTED_FILE );
+		let file = m_fileLookup[ target.dataset.fileId ];
 
 		// Toggle the folder Open/Closed
 		if( target.dataset.fileType === FILE_TYPE_FOLDER ) {
