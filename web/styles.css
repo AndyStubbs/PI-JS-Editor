@@ -208,7 +208,8 @@ html, body {
 }
 
 .new-file-popup p {
-	margin: 5px 0;
+	padding: 5px;
+	margin: 0;
 }
 
 .new-file-popup span {
@@ -224,8 +225,8 @@ html, body {
 	width: 100px;
 }
 
-#new-file-buttons {
-	text-align: center;
+#new-file-message {
+	background-color: rgb(100, 100, 100);
 }
 
 .msg-error {

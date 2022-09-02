@@ -188,7 +188,12 @@ var layout = ( function () {
 		}
 	}
 
-	function createPopup( title, contentElement, okCommand, cancelCommand ) {
+	function createPopup( title, contentElement, options ) {
+		if( !options ) {
+			options = {};
+		}
+		let okCommand = options.okCommand;
+		let cancelCommand = options.cancelCommand;
 		let popup = document.createElement( "div" );
 		popup.className = "popup";
 		popup.innerHTML = "<div class='popup-title'>" +
@@ -198,20 +203,30 @@ var layout = ( function () {
 		popup.appendChild( contentElement );
 		let footer = document.createElement( "div" );
 		footer.className = "popup-footer";
-
-		if( cancelCommand ) {
-			footer.innerHTML = "<input class='popup-ok button' type='button' value='OK' />" +
-				"<input class='popup-close button' type='button' value='Cancel' />";
-		} else {
-			footer.innerHTML = "<input class='popup-ok button' type='button' value='OK' />";
+		if( options.extraButtons ) {
+			for( let i = options.extraButtons.length - 1; i >= 0; i-- ) {
+				footer.appendChild( options.extraButtons[ i ] );
+			}
 		}
+		if( cancelCommand ) {
+			let cancelButton = document.createElement( "input" );
+			cancelButton.classList.add( "button" );
+			cancelButton.classList.add( "popup-close" );
+			cancelButton.type = "button";
+			cancelButton.value = "Cancel";
+			footer.appendChild( cancelButton );
+		}
+		let okButton = document.createElement( "input" );
+		okButton.classList.add( "button" );
+		okButton.classList.add( "popup-ok" );
+		okButton.type = "button";
+		okButton.value = "Ok";
+		footer.appendChild( okButton );
 		popup.appendChild( footer );
 		document.body.appendChild( popup );
-
 		popup.querySelectorAll( ".popup-close" ).forEach( function ( element ) {
 			element.addEventListener( "click", closePopup );
 		} );
-
 		popup.querySelectorAll( ".popup-ok" ).forEach( function ( element ) {
 			element.addEventListener( "click", okPopup );
 		} );

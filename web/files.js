@@ -250,7 +250,7 @@ var file = ( function () {
 			typeOptions += "<option>" + FILE_TYPES[ i ] + "</option>";
 		}
 		let folderOptions = createFolderOptions();
-		
+
 		div.className = "new-file-popup";
 		div.innerHTML = "<p>" +
 			"<span>File Type:</span>&nbsp;&nbsp;" +
@@ -261,10 +261,7 @@ var file = ( function () {
 			"</p><p>" +
 			"<span>Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" +
-			"</p><p id='new-file-message'>&nbsp;" +
-			"</p><p id='new-file-buttons'>" +
-			"<input id='new-file-create-button' class='button' type='button' value='Create' />" +
-			"</p>";
+			"</p><p id='new-file-message'>&nbsp;</p>";
 		div.querySelector( "#new-file-name" ).addEventListener( "change", function () {
 			let unallowedCharacters = "./\\";
 			let value = this.value;
@@ -283,7 +280,11 @@ var file = ( function () {
 			let language = div.querySelector( "#new-file-language" ).value;
 			div.querySelector( "#new-file-extension" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
 		} );
-		div.querySelector( "#new-file-create-button" ).addEventListener( "click", function () {
+		let createButton = document.createElement( "input" );
+		createButton.classList.add( "button" );
+		createButton.value = "Create";
+		createButton.type = "button";
+		createButton.addEventListener( "click", function () {
 			let language = div.querySelector( "#new-file-language" ).value;
 			let name = div.querySelector( "#new-file-name" ).value + FILE_TYPE_EXTENSIONS[ language ];
 			let folderPath = div.querySelector( "#new-file-folder" ).value;
@@ -318,7 +319,7 @@ var file = ( function () {
 				div.querySelector( "#new-file-folder" ).innerHTML = createFolderOptions();
 			}
 		} );
-		layout.createPopup( "Create New File", div );
+		layout.createPopup( "Create New File", div, { "extraButtons": [ createButton ] } );
 	}
 
 } )();
