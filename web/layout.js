@@ -131,6 +131,7 @@ var layout = ( function () {
 	function createMenu( items, menuContainer ) {
 		let submenu = document.createElement( "div" );
 		let isOpenThisThread = false;
+		let isMenuOpen = false;
 		submenu.classList.add( "submenu" );
 		submenu.style.display = "none";
 		document.body.appendChild( submenu );
@@ -157,7 +158,12 @@ var layout = ( function () {
 				submenuItem.innerHTML = "<span class='subitem-title'>" + subItem.name + "</span>" +
 					"<span class='shortcut'>" + subItem.shortcut + "</span>";
 				submenuItem.classList.add( "submenu-item" );
-				submenuItem.addEventListener( "click", subItem.command );
+				submenuItem.addEventListener( "click", function() {
+					subItem.command();
+					submenu.style.display = "none";
+					isMenuOpen = false;
+				} );
+				submenuItem.dataset.clickable = true;
 				submenu.appendChild( submenuItem );
 			}
 			let rect = this.getBoundingClientRect();
@@ -165,26 +171,26 @@ var layout = ( function () {
 			submenu.style.left = rect.left + "px";
 			submenu.style.display = "";
 			isOpenThisThread = true;
+			isMenuOpen = true;
 			setTimeout( function () {
 				isOpenThisThread = false;
 			}, 0 );
 		}
 
 		function mouseDown( e ) {
-			if( !isOpenThisThread ) {
-				let over = document.elementFromPoint( e.pageX, e.pageY );
+			if( isMenuOpen && !isOpenThisThread ) {
+				let over = util.getClickableTarget( document.elementFromPoint( e.pageX, e.pageY ), this );
+				console.log( over );
 				if( ! over.classList.contains( "submenu-item" ) ) {
-					setTimeout( function () {
-						submenu.style.display = "none";
-					}, 250 );
-				} else {
 					submenu.style.display = "none";
+					isMenuOpen = false;
 				}
 			}
 		}
 
 		function blur() {
 			submenu.style.display = "none";
+			isMenuOpen = false;
 		}
 	}
 
@@ -195,12 +201,23 @@ var layout = ( function () {
 		let okCommand = options.okCommand;
 		let cancelCommand = options.cancelCommand;
 		let popup = document.createElement( "div" );
+		let okText = options.okText;
+
+		if( title === "" ) {
+			title = "&nbsp;";
+		}
 		popup.className = "popup";
 		popup.innerHTML = "<div class='popup-title'>" +
 			"<span>" + title + "</span>" +
 			"<input class='popup-close close-button' type='button' value='X' />" +
 			"</div>";
+		if( typeof contentElement === "string" ) {
+			let temp = contentElement;
+			contentElement = document.createElement( "div" );
+			contentElement.innerHTML = temp;
+		}
 		popup.appendChild( contentElement );
+
 		let footer = document.createElement( "div" );
 		footer.className = "popup-footer";
 		if( options.extraButtons ) {
@@ -221,9 +238,15 @@ var layout = ( function () {
 		okButton.classList.add( "popup-ok" );
 		okButton.type = "button";
 		okButton.value = "Ok";
+		if( okText ) {
+			okButton.value = okText;
+		}
 		footer.appendChild( okButton );
 		popup.appendChild( footer );
-		document.body.appendChild( popup );
+		let popupOverlay = document.createElement( "div" );
+		popupOverlay.classList.add( "popup-overlay" );
+		popupOverlay.appendChild( popup );
+		document.body.appendChild( popupOverlay );
 		popup.querySelectorAll( ".popup-close" ).forEach( function ( element ) {
 			element.addEventListener( "click", closePopup );
 		} );
@@ -237,7 +260,7 @@ var layout = ( function () {
 				success = okCommand();
 			}
 			if( success ) {
-				document.body.removeChild( popup );
+				document.body.removeChild( popupOverlay );
 			}
 		}
 
@@ -245,7 +268,7 @@ var layout = ( function () {
 			if( cancelCommand ) {
 				cancelCommand();
 			}
-			document.body.removeChild( popup );
+			document.body.removeChild( popupOverlay );
 		}
 	}
 } )();

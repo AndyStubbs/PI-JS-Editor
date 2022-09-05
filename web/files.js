@@ -23,17 +23,22 @@ var file = ( function () {
 		 "FILES": "files",
 		 "MAIN_EDITOR_TABS": "main-editor-tabs",
 		 "SELECTED_FILE": "selected-file",
-		 "SELECTED_TAB": "selected-tab"
+		 "SELECTED_TAB": "selected-tab",
+		 "LAST_SELECTED_FILE": "last-selected-file"
 	};
 
 	let m_files = { 
 		"name": ROOT_NAME,
+		"fullname": ROOT_NAME,
 		"type": FILE_TYPE_FOLDER,
+		"path": "",
 		"content": [
 			{
-				"name": "index.html",
+				"name": "index",
+				"fullname": "index.html",
 				"type": FILE_TYPE_HTML,
 				"isOpen": true,
+				"path": "root",
 				"content": "" +
 				"<!DOCTYPE html>\n\t" +
 					"<html lang=\"en\">\n\t" +
@@ -49,11 +54,15 @@ var file = ( function () {
 			},
 			{
 				"name": "src",
+				"fullname": "src",
 				"type": FILE_TYPE_FOLDER,
+				"path": "root",
 				"content": [
 					{
-						"name": "main.js",
+						"name": "main",
+						"fullname": "main.js",
 						"type": FILE_TYPE_SCRIPT,
+						"path": "root/src",
 						"content": "" +
 							"$.screen( \"300x200\" );\n" +
 							"$.circle( 150, 100, 50, \"red\" );\n" +
@@ -67,8 +76,10 @@ var file = ( function () {
 							"} );"
 					},
 					{
-						"name": "style.css",
+						"name": "style",
+						"fullname": "style.css",
 						"type": FILE_TYPE_STYLE,
+						"path": "root/src",
 						"content": "" +
 							"html, body {\n\t" +
 								"height: 100%;\n\t" +
@@ -86,9 +97,9 @@ var file = ( function () {
 	let m_lastFileId = 0;
 	let m_lastFileClicked;
 
-	main.addMenuItem( "File", "Create new file", "Ctrl+N", createNewFileDialog );
-	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "File", "Edit file", "Ctrl+E", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Create new file", "Ctrl+N", function() { createFileDialog( "create" ); } );
+	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Upload a new file." ) } );
+	main.addMenuItem( "File", "Edit file", "Ctrl+E", function () { createFileDialog( "edit" ); } );
 	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Create a new file." ) } );
 
 	return {
@@ -97,7 +108,7 @@ var file = ( function () {
 
 	function init() {
 		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
-		initFiles( m_files.content );
+		initFiles( m_files.content, m_files.fullname );
 		createFileView( filesElement, m_files.content );
 		filesElement.addEventListener( "click", clickFiles );
 
@@ -108,20 +119,21 @@ var file = ( function () {
 		} );
 	}
 
-	function initFiles( parentFolder ) {
+	function initFiles( parentFolder, path ) {
 		for( let i = 0; i < parentFolder.length; i++ ) {
 			let file = parentFolder[ i ];
-			createFile( file, parentFolder );
+			createFile( file, path );
 			if( file.type === FILE_TYPE_FOLDER ) {
-				initFiles( file.content );
+				initFiles( file.content, file.path + "/" + file.fullname );
 			}
 		}
 	}
 
-	function createFile( file, parentFolder ) {
+	function createFile( file, path ) {
 		let fileId = ++m_lastFileId;
 		file.id = fileId;
-		file.parent = parentFolder;
+		file.path = path;
+		file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
 		m_fileLookup[ fileId ] = file;
 	}
 
@@ -140,7 +152,7 @@ var file = ( function () {
 				updateFolderName( li, file, true );
 				createFileView( li, file.content );
 			} else {
-				span.innerText = file.name;
+				span.innerText = file.fullname;
 				if( file.isOpen ) {
 					openFile( file );
 				}
@@ -152,7 +164,7 @@ var file = ( function () {
 
 	function openFile( file ) {
 		let tabsContainer = document.querySelector( ".main-editor-tabs" );
-		layout.createTab( tabsContainer, file );
+		layout.createTab( tabsContainer, { "id": file.id, "name": file.fullname } );
 		if( !file.model ) {
 			file.model = editor.createModel( file.content, file.type );
 		}
@@ -161,9 +173,9 @@ var file = ( function () {
 
 	function updateFolderName( element, file, isOpen ) {
 		if( isOpen ) {
-			element.firstElementChild.innerHTML = OPEN_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.name;
+			element.firstElementChild.innerHTML = OPEN_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.fullname;
 		} else {
-			element.firstElementChild.innerHTML = CLOSED_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.name;
+			element.firstElementChild.innerHTML = CLOSED_FOLDER_ENTITY + "&nbsp;&nbsp;" + file.fullname;
 		}
 	}
 
@@ -178,6 +190,7 @@ var file = ( function () {
 			selectMultipleFiles( m_lastFileClicked, target );
 		} else if( e.ctrlKey ) {
 			m_lastFileClicked = target;
+			util.selectItem( target, CLASS_NAMES.LAST_SELECTED_FILE );
 			if( target.classList.contains( CLASS_NAMES.SELECTED_FILE ) ) {
 				target.classList.remove( CLASS_NAMES.SELECTED_FILE );
 			} else {
@@ -186,6 +199,7 @@ var file = ( function () {
 		} else {
 			m_lastFileClicked = target;
 			selectFile( target );
+			util.selectItem( target, CLASS_NAMES.LAST_SELECTED_FILE );
 		}
 	}
 
@@ -252,31 +266,35 @@ var file = ( function () {
 		folderArray.push( name );
 		for( let i = 0; i < folderContents.length; i++ ) {
 			if( folderContents[ i ].type === FILE_TYPE_FOLDER ) {
-				getFolders( name + "/" + folderContents[ i ].name, folderContents[ i ].content, folderArray );
+				getFolders( name + "/" + folderContents[ i ].fullname, folderContents[ i ].content, folderArray );
 			}
 		}
 	}
 
-	function createFolderOptions() {
+	function createFolderOptions( defaultFolderPath ) {
 		let folders = [];
 		getFolders( ROOT_NAME, m_files.content, folders );
 		let folderOptions = "";
 		for( let i = 0; i < folders.length; i++ ) {
-			folderOptions += "<option>" + folders[ i ] + "</option>";
+			if( folders[ i ] === defaultFolderPath ) {
+				folderOptions += "<option selected>" + folders[ i ] + "</option>";
+			} else {
+				folderOptions += "<option>" + folders[ i ] + "</option>";
+			}
 		}
 		return folderOptions;
 	}
 
-	function findFileByName( name, folderContents, isRecursive ) {
-		if( name === ROOT_NAME ) {
+	function findFileByFullname( fullname, folderContents, isRecursive ) {
+		if( fullname === ROOT_NAME ) {
 			return m_files;
 		}
 		for( let i = 0; i < folderContents.length; i++ ) {
-			if( folderContents[ i ].name === name ) {
+			if( folderContents[ i ].fullname === fullname ) {
 				return folderContents[ i ];
 			}
 			if( isRecursive && folderContents[ i ].type === FILE_TYPE_FOLDER ) {
-				let folder = findFileByName( name, folderContents[ i ].content, isRecursive );
+				let folder = findFileByFullname( fullname, folderContents[ i ].content, isRecursive );
 				if( folder ) {
 					return folder;
 				}
@@ -286,11 +304,14 @@ var file = ( function () {
 	}
 
 	function findFileByPath( path ) {
+		if( path === ROOT_NAME ) {
+			return m_files;
+		}
 		let parts = path.split( "/" );
 		let folder = m_files;
 		for( let i = 0; i < parts.length; i++ ) {			
 			if( folder.type === FILE_TYPE_FOLDER ) {
-				folder = findFileByName( parts[ i ], folder.content, false );
+				folder = findFileByFullname( parts[ i ], folder.content, false );
 			} else {
 				return null;
 			}
@@ -301,30 +322,164 @@ var file = ( function () {
 		return folder;
 	}
 
-	function createNewFileDialog() {
-		let popup = document.querySelector( ".popup" );
-		if( popup ) {
-			popup.focus();
-			return;
+	function deleteFile( path ) {
+		let file = findFileByPath( path );
+		if( !file ) {
+			return false;
 		}
+		let parent = findFileByPath( file.path );
+		if( !parent ) {
+			return false;
+		}
+		parent.content.splice( parent.content.indexOf( file ), 1 );
+		delete m_fileLookup[ file.id ];
+	}
+
+	function moveFile( pathSrc, pathDest ) {
+		let file = pathSrc;
+		if( typeof pathSrc === "string" ) {
+			file = findFileByPath( pathSrc );
+		}
+		if( !file ) {
+			return "Source file not found.";
+		}
+		let parent = findFileByPath( file.path );
+		if( !parent ) {
+			return "Source folder not found.";
+		}
+		let newParent = findFileByPath( pathDest );
+		if( !newParent ) {
+			return "Destination folder not found.";
+		}
+		if( isSubfolder( file, newParent ) ) {
+			return "Cannot move a folder into itself.";
+		}
+		let conflict = findFileByPath( pathDest + "/" + file.fullname );
+		if( conflict ) {
+			return "A file already exists in the destination folder with same name.";
+		}
+
+		parent.content.splice( parent.content.indexOf( file ), 1 );
+		newParent.content.push( file );
+		if( newParent.path === "" ) {
+			file.path = newParent.fullname;	
+		} else {
+			file.path = newParent.path + "/" + newParent.fullname;
+		}
+
+		if( file.type === FILE_TYPE_FOLDER ) {
+			repathFolder( file );
+		}
+
+		return true;
+	}
+
+	function isSubfolder( baseFolder, folder ) {
+		if( baseFolder === folder ) {
+			return true;
+		}
+		for( let i = 0; i < folder.content.length; i++ ) {
+			if(
+				folder.content[ i ].type === FILE_TYPE_FOLDER &&
+				isSubfolder( baseFolder, folder.content[ i ] )
+			) {
+				return true;
+			}			
+		}
+		return false;
+	}
+
+	function repathFolder( folder ) {
+		let path = folder.path + "/" + folder.fullname;
+		for( let i = 0; i < folder.content.length; i++ ) {
+			folder.content[ i ].path = path;
+			if( folder.content[ i ].type === FILE_TYPE_FOLDER ) {
+				repathFolder( folder.content[ i ] );
+			}
+		}
+	}
+
+	function createFileDialog( dialogType ) {
+		let buttonText = "Create";
+		let fileDialogTitle = "Create New File";
+		let selectedFiles = null;
+		let defaultName = "untitled";
+		let defaultFolderName = ROOT_NAME;
+		let defaultFileType = FILE_TYPES[ 0 ];
+		let excludedFileTypes = [];
+		let selectedFile = null;
+
+		// Check if we are editting the file or creating a new file
+		if( dialogType === "edit" ) {
+
+			// Need to make sure that a file was selected first
+			if( ! m_lastFileClicked ) {
+				layout.createPopup( "Notice", "Select a file to edit then try again." );
+				return;
+			}
+			buttonText = "Update";
+
+			//Populate list of all selected files --- do not need at this time
+			//selectedFiles = [];
+			//document.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE ).forEach( ( selectedElement ) => {
+			//	selectedFiles.push( m_fileLookup[ selectedElement.dataset.fileId ] );
+			//} );
+
+			// Get the last file selected in case of multi-selection
+			selectedFile = m_fileLookup[ m_lastFileClicked.dataset.fileId ];
+
+			// Setup the defaults
+			defaultName = selectedFile.name;
+			fileDialogTitle = "Update File: " + selectedFile.fullname;
+			defaultFileType = selectedFile.type;
+			defaultFolderName = selectedFile.path;
+			if( defaultFileType === FILE_TYPE_FOLDER ) {
+				for( let i = 0; i < FILE_TYPES.length; i++ ) {
+					if( FILE_TYPES[ i ] !== FILE_TYPE_FOLDER ) {
+						excludedFileTypes.push( FILE_TYPES[ i ] );
+					}
+				}
+			} else {
+				excludedFileTypes.push( FILE_TYPE_FOLDER );
+			}
+		}
+		// Removed because we are doing a modal popup and can only have one popup at a time
+		//let popup = document.querySelector( ".popup" );
+		//if( popup ) {
+		//	popup.focus();
+		//	return;
+		//}
+
+		// Create the popup contents
 		let div = document.createElement( "div" );
 		let typeOptions = "";
 		for( let i = 0; i < FILE_TYPES.length; i++ ) {
-			typeOptions += "<option>" + FILE_TYPES[ i ] + "</option>";
+			if( excludedFileTypes.indexOf( FILE_TYPES[ i ] ) > -1 ) {
+				continue;
+			}
+			if( FILE_TYPES[ i ] === defaultFileType ) {
+				typeOptions += "<option selected>" + FILE_TYPES[ i ] + "</option>";
+			} else {
+				typeOptions += "<option>" + FILE_TYPES[ i ] + "</option>";
+			}
 		}
-		let folderOptions = createFolderOptions();
+		let folderOptions = createFolderOptions( defaultFolderName );
 
+		// Build the HTML
 		div.className = "new-file-popup";
 		div.innerHTML = "<p>" +
 			"<span>File Type:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-language'>" + typeOptions + "</select>" +
 			"</p><p>" +
 			"<span>File Name:</span>&nbsp;&nbsp;" +
-			"<input id='new-file-name' type='text' value='untitled' /> <span id='new-file-extension'>.js</span>" + 
+			"<input id='new-file-name' type='text' value='" + defaultName + "' /> " +
+			"<span id='new-file-extension'>" + FILE_TYPE_EXTENSIONS[ defaultFileType ] + "</span>" + 
 			"</p><p>" +
 			"<span>Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" +
 			"</p><p id='new-file-message'>&nbsp;</p>";
+
+		// When a file name has changed
 		div.querySelector( "#new-file-name" ).addEventListener( "change", function () {
 			let unallowedCharacters = "./\\";
 			let value = this.value;
@@ -339,50 +494,129 @@ var file = ( function () {
 				this.value = value;
 			}
 		} );
+
+		// When the language has changed
 		div.querySelector( "#new-file-language" ).addEventListener( "change", function () {
 			let language = div.querySelector( "#new-file-language" ).value;
 			div.querySelector( "#new-file-extension" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
 		} );
+
+		// Create the create/update button
 		let createButton = document.createElement( "input" );
 		createButton.classList.add( "button" );
-		createButton.value = "Create";
+		createButton.value = buttonText;
 		createButton.type = "button";
-		createButton.addEventListener( "click", function () {
-			let language = div.querySelector( "#new-file-language" ).value;
-			let name = div.querySelector( "#new-file-name" ).value + FILE_TYPE_EXTENSIONS[ language ];
-			let folderPath = div.querySelector( "#new-file-folder" ).value;
-			let filePath = folderPath + "/" + name;
-			let divMsg = document.getElementById( "new-file-message" );
 
-			if( findFileByPath( filePath ) ) {
-				divMsg.classList.remove( "msg-success" );
-				divMsg.classList.add( "msg-error" );
-				divMsg.innerText =  filePath + " already exists.";
-				return false;
+		// When the create/update button is clicked
+		createButton.addEventListener( "click", function () {
+
+			// Get all input values
+			let language = div.querySelector( "#new-file-language" ).value;
+			let name = div.querySelector( "#new-file-name" ).value;
+			let folderPath = div.querySelector( "#new-file-folder" ).value;
+			let filePath = folderPath + "/" + name + FILE_TYPE_EXTENSIONS[ language ];
+			let divMsg = document.getElementById( "new-file-message" );
+			let defaultOp = "Created file: ";
+
+			// If we are doing an update instead of create
+			if( dialogType === "edit" ) {
+
+				// Find the destination file in case the location is different
+				let searchForFile = findFileByPath( filePath );
+				if( searchForFile ) {
+
+					// If there already is a file in the destination folder with the same name
+					// and it isn't the same file
+					if( searchForFile !== selectedFile ) {
+						divMsg.classList.remove( "msg-success" );
+						divMsg.classList.add( "msg-error" );
+						divMsg.innerText =  filePath + " already exists.";
+						return false;
+					} else {
+
+						// No need to move the file since it's already in the destination folder
+						selectedFile.name = name;
+						selectedFile.fullname = name + FILE_TYPE_EXTENSIONS[ language ];
+						selectedFile.language = language;
+						if( selectedFile.type === FILE_TYPE_FOLDER ) {
+							repathFolder( selectedFile );
+						}
+						defaultOp = "Updated file: ";
+					}
+				} else {
+
+					// Store temp values in case move fails
+					let tempName = selectedFile.name;
+					let tempFullname = selectedFile.fullname;
+					let tempLanguage = selectedFile.language;
+
+					selectedFile.name = name;
+					selectedFile.fullname = name + FILE_TYPE_EXTENSIONS[ language ];
+					selectedFile.language = language;
+
+					// Only move if the path is different
+					if( selectedFile.path !== folderPath ) {
+						let moveStatus = moveFile( selectedFile, folderPath );
+						if( moveStatus !== true ) {
+							selectedFile.name = tempName;
+							selectedFile.fullname = tempFullname;
+							selectedFile.language = tempLanguage;
+
+							divMsg.classList.remove( "msg-success" );
+							divMsg.classList.add( "msg-error" );
+							divMsg.innerText =  "Move failed: " + moveStatus;
+							return false;
+						}
+						defaultOp = "Moved file to: ";
+					} else {
+						defaultOp = "Updated file: ";
+					}
+				}
+			} else {
+
+				// Create file
+
+				// Check if file already exists
+				if( findFileByPath( filePath ) ) {
+					divMsg.classList.remove( "msg-success" );
+					divMsg.classList.add( "msg-error" );
+					divMsg.innerText =  filePath + " already exists.";
+					return false;
+				}
+
+				let parent = findFileByPath( folderPath );
+				let parentFolder = parent.content;
+				let content = "";
+				if( language === FILE_TYPE_FOLDER ) {
+					content = [];
+				}
+
+				// Create the file
+				let file = {
+					"name": name,
+					"type": language,
+					"content": content
+				};
+				parentFolder.push( file );
+				if( parent.path === "" ) {
+					createFile( file, ROOT_NAME );
+				} else {
+					createFile( file, parent.path + "/" + parent.fullname );
+				}
 			}
-			let parentFolder = findFileByPath( folderPath ).content;
-			let content = "";
-			if( language === FILE_TYPE_FOLDER ) {
-				content = [];
-			}
-			let file = {
-				"name": name,
-				"type": language,
-				"content": content
-			};
-			parentFolder.push( file );
-			createFile( file, parentFolder );
+
+			// Update file view and options
 			let filesElement = document.querySelector( ".body > .files" );
 			filesElement.innerText = "";
 			createFileView( filesElement, m_files.content );
 			divMsg.classList.remove( "msg-error" );
 			divMsg.classList.add( "msg-success" );
-			divMsg.innerText = "Created file: " + filePath;
+			divMsg.innerText = defaultOp + filePath;
 			if( language === FILE_TYPE_FOLDER ) {
 				div.querySelector( "#new-file-folder" ).innerHTML = createFolderOptions();
 			}
 		} );
-		layout.createPopup( "Create New File", div, { "extraButtons": [ createButton ] } );
+		layout.createPopup( fileDialogTitle, div, { "extraButtons": [ createButton ], "okText": "Close" } );
 	}
 
 } )();
