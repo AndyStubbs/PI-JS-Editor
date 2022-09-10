@@ -98,9 +98,9 @@ var file = ( function () {
 	let m_lastFileClicked;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+N", function() { createFileDialog( "create" ); } );
-	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Upload a new file." ) } );
-	main.addMenuItem( "File", "Edit file", "Ctrl+E", function () { createFileDialog( "edit" ); } );
-	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Create a new file." ) } );
+	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", function () { createFileDialog( "edit" ); } );
+	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Upload a new file." ) } );	
+	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Delete a file." ) } );
 
 	return {
 		"init": init
