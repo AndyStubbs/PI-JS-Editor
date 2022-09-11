@@ -331,6 +331,9 @@ var file = ( function () {
 		if( !parent ) {
 			return false;
 		}
+		if( file.model ) {
+			file.model.dispose();
+		}
 		parent.content.splice( parent.content.indexOf( file ), 1 );
 		delete m_fileLookup[ file.id ];
 	}

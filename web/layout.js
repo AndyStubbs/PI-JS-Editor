@@ -41,67 +41,68 @@ var layout = ( function () {
 	}
 
 	function createTabsElement( tabsElement, tabSelected ) {
-		let tabDrag = null;
+		let f_tabDrag = null;
+		let $tabsElement = $( tabsElement );
+		
+		$tabsElement.on( "click", "input[type='button']", closeTab );
+		$tabsElement.on( "mousedown", ".tab", mousedownTabs );
 
-		tabsElement.addEventListener( "click", clickTabs );
-		tabsElement.addEventListener( "mousedown", mousedownTabs );
+		//tabsElement.addEventListener( "click", clickTabs );
+		//tabsElement.addEventListener( "mousedown", mousedownTabs );
 		tabsElement.addEventListener( "mousemove", mousemoveTabs );
 		window.addEventListener( "mouseup", mouseupWindow );
 		window.addEventListener( "blur", mouseupWindow );
 
-		function clickTabs( e ) {
-			let target = util.getClickableTarget( e.target, this );
-			if( ! target ) {
-				return;
-			}
-	
-			// Check if close button clicked
-			if( target.type === "button" ) {
-				let tab = target.parentElement;
-				// If selected tab then find a new tab to open
-				if( tab.classList.contains( "selected-tab" ) ) {
-					let nearestTab;
-					if( tab.previousElementSibling ) {
-						nearestTab = tab.previousElementSibling;
-					} else {
-						nearestTab = tab.nextElementSibling;
-					}
-					if( nearestTab ) {
-						tabSelected( nearestTab );
-					} else {
-						editor.setModel( null );
-					}
+		function closeTab() {			
+			let tab = this.parentElement;
+
+			// If selected tab then find a new tab to open
+			if( tab.classList.contains( "selected-tab" ) ) {
+				let nearestTab;
+				if( tab.previousElementSibling ) {
+					nearestTab = tab.previousElementSibling;
+				} else {
+					nearestTab = tab.nextElementSibling;
 				}
-				tab.parentElement.removeChild( tab );
+				if( nearestTab ) {
+					tabSelected( nearestTab );
+				} else {
+					editor.setModel( null );
+				}
 			}
+			tab.parentElement.removeChild( tab );
 		}
 
 		function mousedownTabs( e ) {
-			tabDrag = util.getClickableTarget( e.target, this );
-			if( tabDrag && tabDrag.type !== "button" ) {
-				tabSelected( tabDrag );
+			let over = document.elementFromPoint( e.pageX, e.pageY );
+			if( over && over.type === "button" ) {
+				return;
+			}
+			f_tabDrag = this;
+			if( f_tabDrag ) {
+				tabSelected( f_tabDrag );
 			} else {
-				tabDrag = null;
+				f_tabDrag = null;
 			}
 		}
 	
 		function mousemoveTabs( e ) {
-			if( tabDrag ) {
+			if( f_tabDrag ) {
 				let tabUnderMouse = util.getClickableTarget( document.elementFromPoint( e.pageX, e.pageY ), this );
-				if( tabUnderMouse && tabUnderMouse.type !== "button" && tabUnderMouse !== tabDrag ) {
+				if( tabUnderMouse && tabUnderMouse.type !== "button" && tabUnderMouse !== f_tabDrag ) {
 					let tabUnderMouseRect = tabUnderMouse.getBoundingClientRect();
-					let tabDragRect = tabDrag.getBoundingClientRect();
+					let tabDragRect = f_tabDrag.getBoundingClientRect();
 					if( tabDragRect.left > tabUnderMouseRect.right ) {
-						this.insertBefore( tabDrag, tabUnderMouse );
+						this.insertBefore( f_tabDrag, tabUnderMouse );
 					} else {
-						this.insertBefore( tabUnderMouse, tabDrag );
+						this.insertBefore( tabUnderMouse, f_tabDrag );
 					}
 				}
 			}
 		}
 	
 		function mouseupWindow() {
-			tabDrag = null;
+			f_tabDrag = null;
 		}
 	}
 
@@ -120,7 +121,7 @@ var layout = ( function () {
 			newTab.dataset.clickable = true;
 			newTab.append( tabTitle );
 			newTab.append( tabClose );
-			newTab.className = "tab-" + tabData.id + " disable-select";            
+			newTab.className = "tab tab-" + tabData.id + " disable-select";            
 			tabTitle.innerText = tabData.name;
 			newTab.dataset.fileId = tabData.id;
 			tabsContainer.append( newTab );
@@ -163,7 +164,6 @@ var layout = ( function () {
 					submenu.style.display = "none";
 					isMenuOpen = false;
 				} );
-				submenuItem.dataset.clickable = true;
 				submenu.appendChild( submenuItem );
 			}
 			let rect = this.getBoundingClientRect();
@@ -179,9 +179,8 @@ var layout = ( function () {
 
 		function mouseDown( e ) {
 			if( isMenuOpen && !isOpenThisThread ) {
-				let over = util.getClickableTarget( document.elementFromPoint( e.pageX, e.pageY ), this );
-				console.log( over );
-				if( ! over.classList.contains( "submenu-item" ) ) {
+				let $over = $( document.elementFromPoint( e.pageX, e.pageY ) ).closest( ".submenu-item" );
+				if( $over.length === 0 ) {
 					submenu.style.display = "none";
 					isMenuOpen = false;
 				}
