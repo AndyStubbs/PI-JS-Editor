@@ -46,10 +46,7 @@ var layout = ( function () {
 		
 		$tabsElement.on( "click", "input[type='button']", closeTab );
 		$tabsElement.on( "mousedown", ".tab", mousedownTabs );
-
-		//tabsElement.addEventListener( "click", clickTabs );
-		//tabsElement.addEventListener( "mousedown", mousedownTabs );
-		tabsElement.addEventListener( "mousemove", mousemoveTabs );
+		$tabsElement.on( "mousemove", ".tab", mousemoveTabs );
 		window.addEventListener( "mouseup", mouseupWindow );
 		window.addEventListener( "blur", mouseupWindow );
 
@@ -88,14 +85,14 @@ var layout = ( function () {
 	
 		function mousemoveTabs( e ) {
 			if( f_tabDrag ) {
-				let tabUnderMouse = util.getClickableTarget( document.elementFromPoint( e.pageX, e.pageY ), this );
-				if( tabUnderMouse && tabUnderMouse.type !== "button" && tabUnderMouse !== f_tabDrag ) {
+				let tabUnderMouse = this;
+				if( tabUnderMouse !== f_tabDrag ) {
 					let tabUnderMouseRect = tabUnderMouse.getBoundingClientRect();
 					let tabDragRect = f_tabDrag.getBoundingClientRect();
 					if( tabDragRect.left > tabUnderMouseRect.right ) {
-						this.insertBefore( f_tabDrag, tabUnderMouse );
+						tabUnderMouse.parentElement.insertBefore( f_tabDrag, tabUnderMouse );
 					} else {
-						this.insertBefore( tabUnderMouse, f_tabDrag );
+						tabUnderMouse.parentElement.insertBefore( tabUnderMouse, f_tabDrag );
 					}
 				}
 			}
