@@ -109,7 +109,7 @@ var file = ( function () {
 	function init() {
 		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
 		initFiles( m_files.content, m_files.fullname );
-		createFileView( filesElement, m_files.content );
+		createFileView( filesElement, m_files.content, true );
 		filesElement.addEventListener( "click", clickFiles );
 
 		layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
@@ -137,7 +137,7 @@ var file = ( function () {
 		m_fileLookup[ fileId ] = file;
 	}
 
-	function createFileView( element, folder ) {
+	function createFileView( element, folder, init ) {
 		let ul = document.createElement( "ul" );
 		for( let i = 0; i < folder.length; i++ ) {
 			let file = folder[ i ];
@@ -150,10 +150,10 @@ var file = ( function () {
 
 			if( file.type === FILE_TYPE_FOLDER ) {
 				updateFolderName( li, file, true );
-				createFileView( li, file.content );
+				createFileView( li, file.content, init );
 			} else {
 				span.innerText = file.fullname;
-				if( file.isOpen ) {
+				if( init && file.isOpen ) {
 					openFile( file );
 				}
 			}
