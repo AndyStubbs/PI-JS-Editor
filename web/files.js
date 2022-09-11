@@ -96,11 +96,13 @@ var file = ( function () {
 	let m_fileLookup = {};
 	let m_lastFileId = 0;
 	let m_lastFileClicked;
+	let m_recycleBin = [];
+	let m_tabsElement = null;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+N", function() { createFileDialog( "create" ); } );
 	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", function () { createFileDialog( "edit" ); } );
 	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Upload a new file." ) } );	
-	main.addMenuItem( "File", "Delete file", "DEL", function () { console.log( "Delete a file." ) } );
+	main.addMenuItem( "File", "Delete file", "DEL", deleteSelectedFiles );
 
 	return {
 		"init": init
@@ -108,15 +110,14 @@ var file = ( function () {
 
 	function init() {
 		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
-		initFiles( m_files.content, m_files.fullname );
-		createFileView( filesElement, m_files.content, true );
-		filesElement.addEventListener( "click", clickFiles );
-
-		layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
+		m_tabsElement = layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
 			let file = m_fileLookup[ tab.dataset.fileId ];
 			util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
 			editor.setModel( file.model );
 		} );
+		initFiles( m_files.content, m_files.fullname );
+		createFileView( filesElement, m_files.content, true );
+		filesElement.addEventListener( "click", clickFiles );
 	}
 
 	function initFiles( parentFolder, path ) {
@@ -134,6 +135,7 @@ var file = ( function () {
 		file.id = fileId;
 		file.path = path;
 		file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
+		file.fullpath = file.path + "/" + file.fullname;
 		m_fileLookup[ fileId ] = file;
 	}
 
@@ -163,8 +165,7 @@ var file = ( function () {
 	}
 
 	function openFile( file ) {
-		let tabsContainer = document.querySelector( ".main-editor-tabs" );
-		layout.createTab( tabsContainer, { "id": file.id, "name": file.fullname } );
+		file.tab = m_tabsElement.createTab( { "id": file.id, "name": file.fullname } );
 		if( !file.model ) {
 			file.model = editor.createModel( file.content, file.type );
 		}
@@ -322,6 +323,24 @@ var file = ( function () {
 		return folder;
 	}
 
+	function getSelectedFiles() {
+		let selectedFiles = [];
+		document.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE ).forEach( ( selectedElement ) => {
+			selectedFiles.push( m_fileLookup[ selectedElement.dataset.fileId ] );
+		} );
+		return selectedFiles;
+	}
+
+	function deleteSelectedFiles() {
+		let selectedFiles = getSelectedFiles();
+		for( let i = 0; i < selectedFiles.length; i++ ) {
+			deleteFile( selectedFiles[ i ].fullpath );
+		}
+		if( selectedFiles.length > 0 ) {
+			refreshFileView();
+		}
+	}
+
 	function deleteFile( path ) {
 		let file = findFileByPath( path );
 		if( !file ) {
@@ -331,11 +350,30 @@ var file = ( function () {
 		if( !parent ) {
 			return false;
 		}
+		let recycledFile = {
+			"content": null
+		};
+		if( file.type === FILE_TYPE_FOLDER ) {
+			recycledFile.content = [];
+			for( let i = 0; i < file.content.length; i++ ) {
+				recycledFile.content.push( file.content[ i ].fullpath );
+				deleteFile( file.content[ i ].fullpath );
+			}
+		} else {
+			recycledFile.content = file.content;
+		}
+
 		if( file.model ) {
+			recycledFile.content = file.model.getValue();
 			file.model.dispose();
+		}
+		if( file.tab ) {
+			m_tabsElement.closeTab( file.tab );
 		}
 		parent.content.splice( parent.content.indexOf( file ), 1 );
 		delete m_fileLookup[ file.id ];
+
+		m_recycleBin.push( recycledFile );
 	}
 
 	function moveFile( pathSrc, pathDest ) {
@@ -400,6 +438,13 @@ var file = ( function () {
 				repathFolder( folder.content[ i ] );
 			}
 		}
+	}
+
+	// Update file view and options
+	function refreshFileView() {
+		let filesElement = document.querySelector( ".body > .files" );
+		filesElement.innerText = "";
+		createFileView( filesElement, m_files.content );
 	}
 
 	function createFileDialog( dialogType ) {
@@ -608,10 +653,8 @@ var file = ( function () {
 				}
 			}
 
-			// Update file view and options
-			let filesElement = document.querySelector( ".body > .files" );
-			filesElement.innerText = "";
-			createFileView( filesElement, m_files.content );
+			refreshFileView();
+
 			divMsg.classList.remove( "msg-error" );
 			divMsg.classList.add( "msg-success" );
 			divMsg.innerText = defaultOp + filePath;

@@ -3,7 +3,6 @@ var layout = ( function () {
 	return {
 		"createHorizontalResize": createHorizontalResize,
 		"createTabsElement": createTabsElement,
-		"createTab": createTab,
 		"createMenu": createMenu,
 		"createPopup": createPopup
 	};
@@ -42,32 +41,18 @@ var layout = ( function () {
 
 	function createTabsElement( tabsElement, tabSelected ) {
 		let f_tabDrag = null;
+		let f_tabsContainer = tabsElement;
 		let $tabsElement = $( tabsElement );
 		
-		$tabsElement.on( "click", "input[type='button']", closeTab );
+		$tabsElement.on( "click", "input[type='button']", closeTabButtonClicked );
 		$tabsElement.on( "mousedown", ".tab", mousedownTabs );
 		$tabsElement.on( "mousemove", ".tab", mousemoveTabs );
 		window.addEventListener( "mouseup", mouseupWindow );
 		window.addEventListener( "blur", mouseupWindow );
 
-		function closeTab() {			
+		function closeTabButtonClicked() {			
 			let tab = this.parentElement;
-
-			// If selected tab then find a new tab to open
-			if( tab.classList.contains( "selected-tab" ) ) {
-				let nearestTab;
-				if( tab.previousElementSibling ) {
-					nearestTab = tab.previousElementSibling;
-				} else {
-					nearestTab = tab.nextElementSibling;
-				}
-				if( nearestTab ) {
-					tabSelected( nearestTab );
-				} else {
-					editor.setModel( null );
-				}
-			}
-			tab.parentElement.removeChild( tab );
+			closeTab( tab );
 		}
 
 		function mousedownTabs( e ) {
@@ -101,29 +86,57 @@ var layout = ( function () {
 		function mouseupWindow() {
 			f_tabDrag = null;
 		}
-	}
 
-	function createTab( tabsContainer, tabData ) {
-		let existingTab = tabsContainer.querySelector( ".tab-"+ tabData.id );
-		if( existingTab ) {
-			util.selectItem( existingTab, "selected-tab" );
-		} else {
-			let newTab = document.createElement( "div" );
-			let tabTitle = document.createElement( "span" );
-			let tabClose = document.createElement( "input" );
-			tabClose.type = "button";
-			tabClose.dataset.clickable = true;
-			tabClose.value = "X";
-			tabClose.className = "close-button";
-			newTab.dataset.clickable = true;
-			newTab.append( tabTitle );
-			newTab.append( tabClose );
-			newTab.className = "tab tab-" + tabData.id + " disable-select";            
-			tabTitle.innerText = tabData.name;
-			newTab.dataset.fileId = tabData.id;
-			tabsContainer.append( newTab );
-			util.selectItem( newTab, "selected-tab" );
+		function createTab( tabData ) {
+			let existingTab = f_tabsContainer.querySelector( ".tab-"+ tabData.id );
+			if( existingTab ) {
+				util.selectItem( existingTab, "selected-tab" );
+			} else {
+				let newTab = document.createElement( "div" );
+				let tabTitle = document.createElement( "span" );
+				let tabClose = document.createElement( "input" );
+				tabClose.type = "button";
+				tabClose.dataset.clickable = true;
+				tabClose.value = "X";
+				tabClose.className = "close-button";
+				newTab.dataset.clickable = true;
+				newTab.append( tabTitle );
+				newTab.append( tabClose );
+				newTab.className = "tab tab-" + tabData.id + " disable-select";            
+				tabTitle.innerText = tabData.name;
+				newTab.dataset.fileId = tabData.id;
+				f_tabsContainer.append( newTab );
+				util.selectItem( newTab, "selected-tab" );
+	
+				return newTab;
+			}
+			return existingTab;
 		}
+
+		function closeTab( tab ) {
+			// If selected tab then find a new tab to open
+			if( tab.classList.contains( "selected-tab" ) ) {
+				let nearestTab;
+				if( tab.previousElementSibling ) {
+					nearestTab = tab.previousElementSibling;
+				} else {
+					nearestTab = tab.nextElementSibling;
+				}
+				if( nearestTab ) {
+					tabSelected( nearestTab );
+				} else {
+					editor.setModel( null );
+				}
+			}
+			if( tab.parentElement ) {
+				tab.parentElement.removeChild( tab );
+			}
+		}
+
+		return {
+			"createTab": createTab,
+			"closeTab": closeTab
+		};
 	}
 
 	function createMenu( items, menuContainer ) {
