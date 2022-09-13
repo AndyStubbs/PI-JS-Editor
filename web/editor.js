@@ -14,11 +14,6 @@ var editor = ( function () {
 	let activeEditor;
 
 	window.addEventListener( "resize", resize );
-	main.addMenuItem( "Edit", "Undo", "Ctrl+Z", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "Edit", "Redo", "Ctrl+Y", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "Edit", "Cut", "Ctrl+X", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "Edit", "Copy", "Ctrl+C", function () { console.log( "Create a new file." ) } );
-	main.addMenuItem( "Edit", "Paste", "Ctrl+V", function () { console.log( "Create a new file." ) } );
 
 	return {
 		"init": init,

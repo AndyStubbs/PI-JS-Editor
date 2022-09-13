@@ -99,10 +99,10 @@ var file = ( function () {
 	let m_recycleBin = [];
 	let m_tabsElement = null;
 
-	main.addMenuItem( "File", "Create new file", "Ctrl+N", function() { createFileDialog( "create" ); } );
-	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", function () { createFileDialog( "edit" ); } );
-	main.addMenuItem( "File", "Upload file", "Ctrl+U", function () { console.log( "Upload a new file." ) } );	
-	main.addMenuItem( "File", "Delete file", "DEL", deleteSelectedFiles );
+	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
+	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
+	main.addMenuItem( "File", "Upload file", "Ctrl+U", { "key": "U", "ctrlKey": true }, function () { console.log( "Upload a new file." ) } );	
+	main.addMenuItem( "File", "Delete file", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
 
 	return {
 		"init": init

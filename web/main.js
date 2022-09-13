@@ -4,8 +4,7 @@
 "use strict";
 var main = ( function () {
 	let menuItems = {
-		"File": [],
-		"Edit": []
+		"File": []
 	};
 	return {
 		"init": init,
@@ -38,11 +37,12 @@ var main = ( function () {
 		layout.createMenu( menuArray, document.querySelector( ".header" ) );
 	}
 
-	function addMenuItem( menuName, title, shortcut, command ) {
+	function addMenuItem( menuName, title, shortcutName, shortcutKey, command ) {
 		let menuItem = {
 			"name": title,
 			"command": command,
-			"shortcut": shortcut
+			"shortcutName": shortcutName,
+			"shortcutKey": shortcutKey
 		};
 		menuItems[ menuName ].push( menuItem );
 	}

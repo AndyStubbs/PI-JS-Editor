@@ -1,5 +1,7 @@
 "use strict";
 var layout = ( function () {
+	let m_keys = {};
+
 	return {
 		"createHorizontalResize": createHorizontalResize,
 		"createTabsElement": createTabsElement,
@@ -148,6 +150,7 @@ var layout = ( function () {
 		document.body.appendChild( submenu );
 		window.addEventListener( "mousedown", mouseDown );
 		window.addEventListener( "blur", blur );
+		window.addEventListener( "keydown", keyDown );
 
 		for( let i = 0; i < items.length; i++ ) {
 			let item = items[ i ];
@@ -157,6 +160,12 @@ var layout = ( function () {
 			element.dataset.index = i;
 			element.addEventListener( "mousedown", openSubMenu );
 			menuContainer.appendChild( element );
+
+			for( let j = 0; j < item.subItems.length; j++ ) {
+				if( item.subItems[ j ].shortcutKey ) {
+					m_keys[ item.subItems[ j ].shortcutKey.key ] = item.subItems[ j ];
+				}
+			}
 		}
 
 		function openSubMenu() {
@@ -167,7 +176,7 @@ var layout = ( function () {
 				let subItem = item.subItems[ i ];
 				let submenuItem = document.createElement( "div" );
 				submenuItem.innerHTML = "<span class='subitem-title'>" + subItem.name + "</span>" +
-					"<span class='shortcut'>" + subItem.shortcut + "</span>";
+					"<span class='shortcut'>" + subItem.shortcutName + "</span>";
 				submenuItem.classList.add( "submenu-item" );
 				submenuItem.addEventListener( "click", function() {
 					subItem.command();
@@ -200,6 +209,17 @@ var layout = ( function () {
 		function blur() {
 			submenu.style.display = "none";
 			isMenuOpen = false;
+		}
+
+		function keyDown( e ) {
+			console.log( e );
+			let item = m_keys[ e.key.toUpperCase() ];
+			if( item ) {
+				if( e.ctrlKey === item.shortcutKey.ctrlKey ) {
+					item.command();
+					e.preventDefault();
+				}
+			}
 		}
 	}
 
