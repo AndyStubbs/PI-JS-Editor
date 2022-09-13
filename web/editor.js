@@ -2,7 +2,7 @@
 /* global monaco */
 /* global main */
 
-require.config( { paths: { vs: "monaco-editor/min/vs" } } );
+require.config( { paths: { vs: "libs/monaco-editor/min/vs" } } );
 
 require( [ "vs/editor/editor.main" ], function () {
 	editor.init( document.querySelector( ".main-editor-body" ) );

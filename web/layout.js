@@ -254,14 +254,6 @@ var layout = ( function () {
 				footer.appendChild( options.extraButtons[ i ] );
 			}
 		}
-		if( cancelCommand ) {
-			let cancelButton = document.createElement( "input" );
-			cancelButton.classList.add( "button" );
-			cancelButton.classList.add( "popup-close" );
-			cancelButton.type = "button";
-			cancelButton.value = "Cancel";
-			footer.appendChild( cancelButton );
-		}
 		let okButton = document.createElement( "input" );
 		okButton.classList.add( "button" );
 		okButton.classList.add( "popup-ok" );
@@ -271,6 +263,14 @@ var layout = ( function () {
 			okButton.value = okText;
 		}
 		footer.appendChild( okButton );
+		if( cancelCommand ) {
+			let cancelButton = document.createElement( "input" );
+			cancelButton.classList.add( "button" );
+			cancelButton.classList.add( "popup-close" );
+			cancelButton.type = "button";
+			cancelButton.value = "Cancel";
+			footer.appendChild( cancelButton );
+		}
 		popup.appendChild( footer );
 		let popupOverlay = document.createElement( "div" );
 		popupOverlay.classList.add( "popup-overlay" );

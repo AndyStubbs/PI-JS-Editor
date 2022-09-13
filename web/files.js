@@ -101,7 +101,7 @@ var file = ( function () {
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
 	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
-	main.addMenuItem( "File", "Upload file", "Ctrl+U", { "key": "U", "ctrlKey": true }, function () { console.log( "Upload a new file." ) } );	
+	main.addMenuItem( "File", "Upload file", "Ctrl+U", { "key": "U", "ctrlKey": true }, createUploadDialog );	
 	main.addMenuItem( "File", "Delete file", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
 
 	return {
@@ -663,6 +663,23 @@ var file = ( function () {
 			}
 		} );
 		layout.createPopup( fileDialogTitle, div, { "extraButtons": [ createButton ], "okText": "Close" } );
+	}
+
+	function createUploadDialog() {
+		let div = document.createElement( "div" );
+		let folderOptions = createFolderOptions();
+		div.innerHTML = "<p><input type='file' accept='image/*,.js,.zip'></p>" +
+			"<p><span>Upload to Folder:</span>&nbsp;&nbsp;" +
+			"<select id='new-file-folder'>" + folderOptions + "</select>" + "</p>";
+		
+		layout.createPopup( "Upload a File", div, {
+			"okCommand": function () {
+				return true;
+			},
+			"cancelCommand": function () {
+
+			}
+		} );
 	}
 
 } )();
