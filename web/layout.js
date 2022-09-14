@@ -2,6 +2,7 @@
 var layout = ( function () {
 	let m_keys = {};
 
+	initializeDragDrop();
 	return {
 		"createHorizontalResize": createHorizontalResize,
 		"createTabsElement": createTabsElement,
@@ -298,6 +299,53 @@ var layout = ( function () {
 				cancelCommand();
 			}
 			document.body.removeChild( popupOverlay );
+		}
+	}
+
+	function initializeDragDrop() {
+		var dragEvents, i;
+
+		// Prevent default behavior on drag events
+		function noDrop( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		dragEvents = [
+			"drag", "dragstart", "dragend", "dragover",
+			"dragenter", "dragleave", "drop"
+		];
+		for( i = 0; i < dragEvents.length; i++ ) {
+			document.body.addEventListener( dragEvents[ i ], noDrop );
+		}
+
+		// Change background on drag over
+		function dragOver( e ) {
+			let popupOverlay = document.querySelector( ".popup-overlay" );
+			if( popupOverlay ) {
+				popupOverlay.parentElement.removeChild( popupOverlay );
+			}
+			document.getElementById( "dragOverPopup" ).style.display = "block";
+		}
+		dragEvents = [ "dragover", "dragenter" ];
+		for( i = 0; i < dragEvents.length; i++ ) {
+			document.body.addEventListener( dragEvents[ i ], dragOver );
+		}
+
+		// Change background on drag out
+		function dragOut( e ) {
+			document.getElementById( "dragOverPopup" ).style.display = "none";
+		}
+		dragEvents = [ "dragleave", "dragend", "drop" ];
+		for( i = 0; i < dragEvents.length; i++ ) {
+			document.getElementById( "dragOverPopup" )
+				.addEventListener( dragEvents[ i ], dragOut );
+		}
+		document.getElementById( "dragOverPopup" )
+			.addEventListener( "drop", droppedFile );
+
+		// Dropped File
+		function droppedFile( e ) {
+			file.createUploadDialog( e.dataTransfer.files );
 		}
 	}
 } )();

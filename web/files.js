@@ -26,6 +26,7 @@ var file = ( function () {
 		 "SELECTED_TAB": "selected-tab",
 		 "LAST_SELECTED_FILE": "last-selected-file"
 	};
+	const MAX_FILE_SIZE_MB = 5;
 
 	let m_files = { 
 		"name": ROOT_NAME,
@@ -105,7 +106,8 @@ var file = ( function () {
 	main.addMenuItem( "File", "Delete file", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
 
 	return {
-		"init": init
+		"init": init,
+		"createUploadDialog": createUploadDialog
 	};
 
 	function init() {
@@ -665,13 +667,19 @@ var file = ( function () {
 		layout.createPopup( fileDialogTitle, div, { "extraButtons": [ createButton ], "okText": "Close" } );
 	}
 
-	function createUploadDialog() {
+	function createUploadDialog( files ) {
+		console.log( files );
 		let div = document.createElement( "div" );
 		let folderOptions = createFolderOptions();
-		div.innerHTML = "<p><input type='file' accept='image/*,.js,.zip'></p>" +
+		div.innerHTML = "<p><input id='fileUploads' type='file' accept='image/*,.js,.zip' multiple></p>" +
+			"<p>File(s) Size: <span id='fileSize'></span></p>" +
+			"<p id='fileMessage'></p>" +
 			"<p><span>Upload to Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" + "</p>";
-		
+		if( files ) {
+			div.querySelector( "#fileUploads" ).files = files;
+			checkFiles( div, files );
+		}
 		layout.createPopup( "Upload a File", div, {
 			"okCommand": function () {
 				return true;
@@ -680,6 +688,26 @@ var file = ( function () {
 
 			}
 		} );
+		div.querySelector( "#fileUploads" ).addEventListener( "change", () => checkFiles( div ) );
+	}
+
+	function checkFiles( div ) {
+		let files = div.querySelector( "#fileUploads" ).files;
+		let sizeMb = calculateFilesSizeMB( files );
+		div.querySelector( "#fileSize" ).innerText = sizeMb.toFixed( 2 ) + " MB";
+		if( sizeMb > MAX_FILE_SIZE_MB ) {
+			div.querySelector( "#fileMessage" ).innerText = "Total size of files is above the max size of " +
+				MAX_FILE_SIZE_MB + " MB. If you have large images you can try to shrink the image or " +
+				"increase the image compression.";
+		}
+	}
+
+	function calculateFilesSizeMB( files ) {
+		let totalBytes = 0;
+		Array.from( files ).forEach( ( file ) => {
+			totalBytes += file.size;
+		} );
+		return totalBytes / 1048576;
 	}
 
 } )();
