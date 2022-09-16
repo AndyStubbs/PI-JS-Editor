@@ -3,6 +3,7 @@
 /* global editor */
 "use strict";
 var main = ( function () {
+
 	let menuItems = {
 		"File": []
 	};
@@ -19,6 +20,7 @@ var main = ( function () {
 		);
 		initMenu();
 		file.init();
+		storage.calculateLocalStorageCapacity();
 	}
 
 	function initMenu() {
@@ -46,4 +48,5 @@ var main = ( function () {
 		};
 		menuItems[ menuName ].push( menuItem );
 	}
+
 } )();

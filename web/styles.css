@@ -203,6 +203,10 @@ html, body {
 	opacity: 0.75;
 }
 
+.button:disabled {
+    opacity: 0.75;
+}
+
 .close-button {
 	color: rgb(255,0,0);
 	background-color: rgba(0,0,0,0);
