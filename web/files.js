@@ -672,8 +672,9 @@ var file = ( function () {
 		let folderOptions = createFolderOptions();
 		let freespaceMB = ( storage.getFreeSpace() / 1048576 ).toFixed( 2 ) + " MB";
 		div.innerHTML = "<p><input id='fileUploads' type='file' accept='image/*,.js,.zip' multiple></p>" +
-			"<p>Storage Available: " + freespaceMB + "</p>" +
-			"<p>File(s) Size: <span id='fileSize'></span></p>" +
+			"Storage Available: " + freespaceMB + "<br />" +
+			"File(s) Selected: <span id='fileCount'></span><br />" +
+			"File(s) Size: <span id='fileSize'></span><br />" +
 			"<p id='fileMessage'></p>" +
 			"<p><span>Upload to Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" + "</p>";
@@ -694,20 +695,55 @@ var file = ( function () {
 
 	function checkFiles( div ) {
 		let files = div.querySelector( "#fileUploads" ).files;
+		let msg = "";
+
+		// Check the file types
+		let filesData = checkFileTypes( files );
+		if( filesData.bad.length > 0 ) {
+			for( let i = 0; i < filesData.bad.length; i++ ) {
+				msg += "<span class='msg-error'>Unable to upload file: </span>" + filesData.bad[ i ].name + ".<br />";
+			}			
+			let list = new DataTransfer();
+			for( let i = 0; i < filesData.good.length; i++ ) {
+				list.items.add( filesData.good[ i ] );
+			}
+			div.querySelector( "#fileUploads" ).files = list.files;
+			files = list.files;
+		}
+
+		div.querySelector( "#fileCount" ).innerText = filesData.good.length;
+
 		let fileSize = calculateFilesSize( files );
 		let freespace = storage.getFreeSpace();
 		let freespaceMB = ( freespace / 1048576 ).toFixed( 2 ) + " MB";
 		div.querySelector( "#fileSize" ).innerText = ( fileSize / 1048576 ).toFixed( 2 ) + " MB";
 		let okBtn = div.parentElement.querySelector( ".popup-ok" );
 		if( fileSize > freespace ) {
-			div.querySelector( "#fileMessage" ).innerText = "Total size of files is above the max size of " +
+			msg += "<span class='msg-error'>Total size of files is above the max size of " +
 				freespaceMB + ". If you have large images you can try to shrink the images or " +
-				"increase the image compression.";
+				"increase the image compression.</span><br />";
 			okBtn.setAttribute( "disabled", true );
 		} else {
-			div.querySelector( "#fileMessage" ).innerText = "";
 			okBtn.removeAttribute( "disabled" );
 		}
+
+		div.querySelector( "#fileMessage" ).innerHTML = msg;
+	}
+
+	function checkFileTypes( files ) {
+		let badFiles = [];
+		let goodFiles = [];
+		Array.from( files ).forEach( ( file ) => {
+			if( 
+				file.type.indexOf( "javascript" ) === -1 &&
+				file.type.indexOf( "image" ) === -1
+			) {
+				badFiles.push( file );
+			} else {
+				goodFiles.push( file );
+			}
+		} );
+		return { "bad": badFiles, "good": goodFiles };
 	}
 
 	function calculateFilesSize( files ) {
