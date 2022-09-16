@@ -35,8 +35,8 @@ var file = ( function () {
 		"content": [
 			{
 				"name": "index",
-				"fullname": "index.html",
-				"type": FILE_TYPE_HTML,
+				"fullname": "index.js",
+				"type": FILE_TYPE_SCRIPT,
 				"isOpen": true,
 				"path": "root",
 				"content": "" +
@@ -77,8 +77,8 @@ var file = ( function () {
 					},
 					{
 						"name": "style",
-						"fullname": "style.css",
-						"type": FILE_TYPE_STYLE,
+						"fullname": "style.js",
+						"type": FILE_TYPE_SCRIPT,
 						"path": "root/src",
 						"content": "" +
 							"html, body {\n\t" +
@@ -114,7 +114,8 @@ var file = ( function () {
 		m_tabsElement = layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
 			let file = m_fileLookup[ tab.dataset.fileId ];
 			util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
-			editor.setModel( file.model );
+			//editor.setModel( file.model );
+			fileSelected( file );
 		} );
 		initFiles( m_files.content, m_files.fullname );
 		createFileView( filesElement, m_files.content, true );
@@ -131,11 +132,15 @@ var file = ( function () {
 		}
 	}
 
-	function createFile( file, path ) {
+	function createFile( file, path, skipExtension ) {
 		let fileId = ++m_lastFileId;
 		file.id = fileId;
 		file.path = path;
-		file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
+		if( skipExtension ) {
+			file.fullname = file.name;
+		} else {
+			file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
+		}
 		file.fullpath = file.path + "/" + file.fullname;
 		m_fileLookup[ fileId ] = file;
 	}
@@ -167,10 +172,32 @@ var file = ( function () {
 
 	function openFile( file ) {
 		file.tab = m_tabsElement.createTab( { "id": file.id, "name": file.fullname } );
-		if( !file.model ) {
-			file.model = editor.createModel( file.content, file.type );
+		fileSelected( file );
+	}
+
+	function fileSelected( file ) {
+		if( file.type === FILE_TYPE_SCRIPT ) {
+			$( ".main-image-viewer" ).hide();
+			$( ".main-editor-body" ).show();
+			if( !file.model ) {
+				file.model = editor.createModel( file.content, file.type );
+			}
+			editor.setModel( file.model );
+		} else {
+			let $imageViewer = $( ".main-image-viewer" );
+			if( $imageViewer.data( "file" ) === file.fullpath ) {
+				$( ".main-editor-body" ).hide();
+				$imageViewer.show();	
+			} else {
+				$( ".main-editor-body" ).hide();
+				$imageViewer.html( "" ).show();
+				let img = new Image();
+				img.src = file.content;
+				img.style.width = "100%";
+				$imageViewer.append( img );
+				$imageViewer.data( file.fullpath );
+			}
 		}
-		editor.setModel( file.model );
 	}
 
 	function updateFolderName( element, file, isOpen ) {
@@ -441,7 +468,6 @@ var file = ( function () {
 		}
 	}
 
-	// Update file view and options
 	function refreshFileView() {
 		let filesElement = document.querySelector( ".body > .files" );
 		filesElement.innerText = "";
@@ -680,6 +706,11 @@ var file = ( function () {
 			"<select id='new-file-folder'>" + folderOptions + "</select>" + "</p>";
 		layout.createPopup( "Upload a File", div, {
 			"okCommand": function () {
+				let folderPath = div.querySelector( "#new-file-folder" ).value;
+				let files = div.querySelector( "#fileUploads" ).files;				
+				Array.from( files ).forEach( ( file ) => {
+					saveUploadedFile( file, folderPath );
+				} );
 				return true;
 			},
 			"cancelCommand": function () {
@@ -691,6 +722,49 @@ var file = ( function () {
 			checkFiles( div, files );
 		}
 		div.querySelector( "#fileUploads" ).addEventListener( "change", () => checkFiles( div ) );
+	}
+
+	function saveUploadedFile( uploadedFile, folderPath ) {
+		let parent = findFileByPath( folderPath );
+		let parentFolder = parent.content;
+		let type = uploadedFile.type.indexOf( "javascript" ) > -1 ? "javascript" : "image";
+		let reader = new FileReader ();
+		let name = uploadedFile.name;
+		let filePath = folderPath + "/" + name;
+		let searchForFile = findFileByPath( filePath );
+		let index = 0;
+		while( searchForFile ) {
+			name = getUpdatedName( uploadedFile.name, ++index  );
+			filePath = folderPath + "/" + name;
+			searchForFile = findFileByPath( filePath );
+		}
+		reader.onloadend = function ( ev ) {
+			let newFile = {
+				"name": name,
+				"type": type,
+				"content": reader.result
+			};
+			parentFolder.push( newFile );
+			if( parent.path === "" ) {
+				createFile( newFile, ROOT_NAME, true );
+			} else {
+				createFile( newFile, parent.path + "/" + parent.fullname, true );
+			}
+			refreshFileView();
+		};
+		if( type === "javascript" ) {
+			reader.readAsText( uploadedFile );
+		} else {
+			reader.readAsDataURL( uploadedFile );
+		}
+	}
+
+	function getUpdatedName( name, index ) {
+		if( name.lastIndexOf( "." ) === -1 ) {
+			return name + "_" + ( index + "" ).padStart( 3, "0" );
+		}
+		let extension = name.substring( name.lastIndexOf( "." ) );
+		return name.substring( 0, name.lastIndexOf( "." ) ) + "_" + ( index + "" ).padStart( 2, "0" ) + extension;
 	}
 
 	function checkFiles( div ) {

@@ -91,7 +91,7 @@ var layout = ( function () {
 		}
 
 		function createTab( tabData ) {
-			let existingTab = f_tabsContainer.querySelector( ".tab-"+ tabData.id );
+			let existingTab = f_tabsContainer.querySelector( ".tab-" + tabData.id );
 			if( existingTab ) {
 				util.selectItem( existingTab, "selected-tab" );
 			} else {

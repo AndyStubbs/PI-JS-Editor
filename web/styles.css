@@ -120,7 +120,7 @@ html, body {
 
 .main-editor-tabs {
 	width: 100%;
-	height: 20px;
+	min-height: 20px;
 	margin: 0;
 	padding: 0;
 	background-color: rgb(57, 57, 57);
@@ -140,6 +140,11 @@ html, body {
 }
 
 .main-editor-body {
+	width: 100%;
+	height: calc(100% - 20px);
+}
+
+.main-image-viewer {
 	width: 100%;
 	height: calc(100% - 20px);
 }
