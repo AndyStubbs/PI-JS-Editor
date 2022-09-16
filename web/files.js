@@ -26,6 +26,8 @@ var file = ( function () {
 		 "SELECTED_TAB": "selected-tab",
 		 "LAST_SELECTED_FILE": "last-selected-file"
 	};
+	const SAVE_DELAY = 3000;
+	const MB_SIZE = 1048576;
 
 	let m_files = { 
 		"name": ROOT_NAME,
@@ -34,70 +36,31 @@ var file = ( function () {
 		"path": "",
 		"content": [
 			{
-				"name": "index",
-				"fullname": "index.js",
+				"name": "main",
+				"fullname": "main.js",
 				"type": FILE_TYPE_SCRIPT,
 				"isOpen": true,
 				"path": "root",
 				"content": "" +
-				"<!DOCTYPE html>\n\t" +
-					"<html lang=\"en\">\n\t" +
-					"<head>\n\t\t" +
-						"<title>My Game</title>\n\t\t" +
-						"<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />\n\t\t" +
-						"<link rel=\"stylesheet\" href=\"styles.css\">\n\t" +
-					"</head>\n\t" +
-					"<body>\n\t\t" +
-						"<script src=\"main.js\"></script>\n\t" +
-					"</body>\n" +
-				"</html>"
-			},
-			{
-				"name": "src",
-				"fullname": "src",
-				"type": FILE_TYPE_FOLDER,
-				"path": "root",
-				"content": [
-					{
-						"name": "main",
-						"fullname": "main.js",
-						"type": FILE_TYPE_SCRIPT,
-						"path": "root/src",
-						"content": "" +
-							"$.screen( \"300x200\" );\n" +
-							"$.circle( 150, 100, 50, \"red\" );\n" +
-							"// This is a comment.\n" +
-							"$.filterImg( function ( color, x, y ) {\n\t" +
-							"let z = x + y;\n\t"+
-							"color.r = color.r - Math.round( Math.tan( z / 10 ) * 128 );\n\t" +
-							"color.g = color.g + Math.round( Math.cos( x / 7 ) * 128 );\n\t" +
-							"color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );\n\t" +
-							"return color;\n" +
-							"} );"
-					},
-					{
-						"name": "style",
-						"fullname": "style.js",
-						"type": FILE_TYPE_SCRIPT,
-						"path": "root/src",
-						"content": "" +
-							"html, body {\n\t" +
-								"height: 100%;\n\t" +
-								"margin: 0;\n\t" +
-								"overflow: hidden;\n\t" +
-								"background-color: rgb(30, 30, 30);\n\t" +
-								"color: rgb(225, 225, 225);\n" +
-							"}"
-					}
-				]
+					"$.screen( \"300x200\" );\n" +
+					"$.circle( 150, 100, 50, \"red\" );\n" +
+					"// This is a comment.\n" +
+					"$.filterImg( function ( color, x, y ) {\n\t" +
+					"let z = x + y;\n\t"+
+					"color.r = color.r - Math.round( Math.tan( z / 10 ) * 128 );\n\t" +
+					"color.g = color.g + Math.round( Math.cos( x / 7 ) * 128 );\n\t" +
+					"color.b = color.b + Math.round( Math.sin( y / 5 ) * 128 );\n\t" +
+					"return color;\n" +
+					"} );"
 			}
-		],
+		]
 	};
 	let m_fileLookup = {};
 	let m_lastFileId = 0;
 	let m_lastFileClicked;
 	let m_recycleBin = [];
 	let m_tabsElement = null;
+	let m_saveTimeout = null;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
 	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
@@ -114,9 +77,12 @@ var file = ( function () {
 		m_tabsElement = layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
 			let file = m_fileLookup[ tab.dataset.fileId ];
 			util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
-			//editor.setModel( file.model );
 			fileSelected( file );
 		} );
+		let filesStr = localStorage.getItem( "files" );
+		if( filesStr ) {
+			m_files = JSON.parse( filesStr );
+		}
 		initFiles( m_files.content, m_files.fullname );
 		createFileView( filesElement, m_files.content, true );
 		filesElement.addEventListener( "click", clickFiles );
@@ -138,7 +104,10 @@ var file = ( function () {
 		file.path = path;
 		if( skipExtension ) {
 			file.fullname = file.name;
-		} else {
+			if( file.name.lastIndexOf( "." ) > -1 ) {
+				file.name = file.name.substring( 0, file.name.lastIndexOf( "." ) )
+			}
+		} else if( !file.fullname ) {
 			file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
 		}
 		file.fullpath = file.path + "/" + file.fullname;
@@ -181,6 +150,10 @@ var file = ( function () {
 			$( ".main-editor-body" ).show();
 			if( !file.model ) {
 				file.model = editor.createModel( file.content, file.type );
+				file.model.onDidChangeContent( function () {
+					file.content = file.model.getValue();
+					saveFiles();
+				} );
 			}
 			editor.setModel( file.model );
 		} else {
@@ -192,10 +165,16 @@ var file = ( function () {
 				$( ".main-editor-body" ).hide();
 				$imageViewer.html( "" ).show();
 				let img = new Image();
+				img.onload = function () {
+					if( img.naturalWidth < $imageViewer.width() ) {
+						//image-rendering: pixelated;
+						img.style.imageRendering = "pixelated";
+					}
+				}
 				img.src = file.content;
 				img.style.width = "100%";
 				$imageViewer.append( img );
-				$imageViewer.data( file.fullpath );
+				$imageViewer.data( "file", file.fullpath );
 			}
 		}
 	}
@@ -472,6 +451,7 @@ var file = ( function () {
 		let filesElement = document.querySelector( ".body > .files" );
 		filesElement.innerText = "";
 		createFileView( filesElement, m_files.content );
+		saveFiles( 100 );
 	}
 
 	function createFileDialog( dialogType ) {
@@ -693,10 +673,9 @@ var file = ( function () {
 	}
 
 	function createUploadDialog( files ) {
-		console.log( files );
 		let div = document.createElement( "div" );
 		let folderOptions = createFolderOptions();
-		let freespaceMB = ( storage.getFreeSpace() / 1048576 ).toFixed( 2 ) + " MB";
+		let freespaceMB = ( storage.getFreeSpace() / MB_SIZE ).toFixed( 2 ) + " MB";
 		div.innerHTML = "<p><input id='fileUploads' type='file' accept='image/*,.js,.zip' multiple></p>" +
 			"Storage Available: " + freespaceMB + "<br />" +
 			"File(s) Selected: <span id='fileCount'></span><br />" +
@@ -789,12 +768,16 @@ var file = ( function () {
 
 		let fileSize = calculateFilesSize( files );
 		let freespace = storage.getFreeSpace();
-		let freespaceMB = ( freespace / 1048576 ).toFixed( 2 ) + " MB";
-		div.querySelector( "#fileSize" ).innerText = ( fileSize / 1048576 ).toFixed( 2 ) + " MB";
+		let totalCapacity = storage.getTotalCapacity();
+		let totalCapacityMB = "5 MB";
+		if( !isNaN( totalCapacity ) ) {
+			totalCapacityMB = ( totalCapacity / MB_SIZE ).toFixed( 2 ) + " MB";
+		}
+		div.querySelector( "#fileSize" ).innerText = ( fileSize / MB_SIZE ).toFixed( 2 ) + " MB";
 		let okBtn = div.parentElement.querySelector( ".popup-ok" );
 		if( fileSize > freespace ) {
 			msg += "<span class='msg-error'>Total size of files is above the max size of " +
-				freespaceMB + ". If you have large images you can try to shrink the images or " +
+			totalCapacityMB + ". If you have large images you can try to shrink the images or " +
 				"increase the image compression.</span><br />";
 			okBtn.setAttribute( "disabled", true );
 		} else {
@@ -826,6 +809,36 @@ var file = ( function () {
 			totalBytes += file.size;
 		} );
 		return totalBytes;
+	}
+
+	function saveFiles( delay ) {
+		if( isNaN( delay ) ) {
+			delay = SAVE_DELAY;
+		}
+		clearTimeout( m_saveTimeout );
+		m_saveTimeout = setTimeout( function () {
+			let filesClone = {};
+		
+			saveItem( m_files, filesClone );
+			localStorage.setItem( "files", JSON.stringify( filesClone ) );
+
+			function saveItem( item, clone ) {
+				clone.name = item.name;
+				clone.fullname = item.fullname
+				clone.type = item.type;
+				clone.path = item.path;
+				if( clone.type === FILE_TYPE_FOLDER ) {
+					clone.content = [];
+					for( let i = 0; i < item.content.length; i++ ) {
+						let cloneItem = {};
+						saveItem( item.content[ i ], cloneItem );
+						clone.content.push( cloneItem );
+					}
+				} else {
+					clone.content = item.content;				
+				}
+			}
+		}, delay );
 	}
 
 } )();

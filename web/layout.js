@@ -32,6 +32,7 @@ var layout = ( function () {
 				let leftElementWidth = e.pageX - resizeMiddlePosition - CURSOR_WIDTH;
 				leftElement.style.width = leftElementWidth + "px";
 				rightElement.style.width = "calc(100% - " + ( leftElementWidth + resizeElementWidth ) + "px)";
+				resizeMain();
 				editor.resize();
 			}
 		}
@@ -110,7 +111,8 @@ var layout = ( function () {
 				newTab.dataset.fileId = tabData.id;
 				f_tabsContainer.append( newTab );
 				util.selectItem( newTab, "selected-tab" );
-	
+
+				resizeMain();
 				return newTab;
 			}
 			return existingTab;
@@ -129,10 +131,13 @@ var layout = ( function () {
 					tabSelected( nearestTab );
 				} else {
 					editor.setModel( null );
+					$( ".main-image-viewer" ).html( "" ).hide();
+					$( ".main-editor-body" ).show();
 				}
 			}
 			if( tab.parentElement ) {
 				tab.parentElement.removeChild( tab );
+				resizeMain();
 			}
 		}
 
@@ -140,6 +145,14 @@ var layout = ( function () {
 			"createTab": createTab,
 			"closeTab": closeTab
 		};
+	}
+
+	function resizeMain() {
+		let height = $( ".main-editor-tabs" ).height() + 4;
+
+		$( ".main-image-viewer" ).css( "height", "calc(100% - " + height + "px)" );
+		$( ".main-editor-body" ).css( "height", "calc(100% - " + height + "px)" );
+		editor.resize();
 	}
 
 	function createMenu( items, menuContainer ) {
