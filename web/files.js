@@ -28,6 +28,7 @@ var file = ( function () {
 	};
 	const SAVE_DELAY = 3000;
 	const MB_SIZE = 1048576;
+	const KB_SIZE = 1024;
 
 	let m_files = { 
 		"name": ROOT_NAME,
@@ -675,7 +676,7 @@ var file = ( function () {
 	function createUploadDialog( files ) {
 		let div = document.createElement( "div" );
 		let folderOptions = createFolderOptions();
-		let freespaceMB = ( storage.getFreeSpace() / MB_SIZE ).toFixed( 2 ) + " MB";
+		let freespaceMB = getMbKb( storage.getFreeSpace() );
 		div.innerHTML = "<p><input id='fileUploads' type='file' accept='image/*,.js,.zip' multiple></p>" +
 			"Storage Available: " + freespaceMB + "<br />" +
 			"File(s) Selected: <span id='fileCount'></span><br />" +
@@ -701,6 +702,14 @@ var file = ( function () {
 			checkFiles( div, files );
 		}
 		div.querySelector( "#fileUploads" ).addEventListener( "change", () => checkFiles( div ) );
+	}
+
+	function getMbKb( size ) {
+		if( size < KB_SIZE * 100 ) {
+			return ( size / KB_SIZE ).toFixed( 2 ) + " KB";
+		} else {
+			return ( size / MB_SIZE ).toFixed( 2 ) + " MB";
+		}
 	}
 
 	function saveUploadedFile( uploadedFile, folderPath ) {
@@ -771,9 +780,9 @@ var file = ( function () {
 		let totalCapacity = storage.getTotalCapacity();
 		let totalCapacityMB = "5 MB";
 		if( !isNaN( totalCapacity ) ) {
-			totalCapacityMB = ( totalCapacity / MB_SIZE ).toFixed( 2 ) + " MB";
+			totalCapacityMB = getMbKb( totalCapacity );
 		}
-		div.querySelector( "#fileSize" ).innerText = ( fileSize / MB_SIZE ).toFixed( 2 ) + " MB";
+		div.querySelector( "#fileSize" ).innerText = getMbKb( fileSize );
 		let okBtn = div.parentElement.querySelector( ".popup-ok" );
 		if( fileSize > freespace ) {
 			msg += "<span class='msg-error'>Total size of files is above the max size of " +
