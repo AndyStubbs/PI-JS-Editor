@@ -106,7 +106,7 @@ var file = ( function () {
 		if( skipExtension ) {
 			file.fullname = file.name;
 			if( file.name.lastIndexOf( "." ) > -1 ) {
-				file.name = file.name.substring( 0, file.name.lastIndexOf( "." ) )
+				file.name = file.name.substring( 0, file.name.lastIndexOf( "." ) );
 			}
 		} else if( !file.fullname ) {
 			file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
