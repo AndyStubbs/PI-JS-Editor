@@ -143,6 +143,7 @@ var file = ( function () {
 	function openFile( file ) {
 		file.tab = m_tabsElement.createTab( { "id": file.id, "name": file.fullname } );
 		fileSelected( file );
+		editor.resize();
 	}
 
 	function fileSelected( file ) {
