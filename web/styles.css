@@ -13,11 +13,10 @@ html, body {
 	user-select: none;
 }
 
-.header {
+.main-menu {
 	background-color: rgb(57, 57, 57);
-	width: 100%;
 	margin: 0;
-	padding: 2.5px 0 2.5px 15px;
+	padding: 2.5px 0 2.5px 5px;
 }
 
 .menu-item {

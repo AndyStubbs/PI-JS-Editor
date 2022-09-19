@@ -19,8 +19,8 @@ var layout = ( function () {
 		let oldCursor;
 		let resizeElementWidth = resizeElement.getBoundingClientRect().width;
 		let resizeMiddlePosition = resizeElementWidth / 2;
-		const CURSOR_WIDTH = 15;
-
+		const CURSOR_WIDTH = 0;
+		const MIN_WIDTH = 100;
 		function mouseDown() {
 			isMouseDown = true;
 			oldCursor = leftElement.style.cursor;
@@ -30,6 +30,9 @@ var layout = ( function () {
 		function mouseMove( e ) {
 			if( isMouseDown ) {
 				let leftElementWidth = e.pageX - resizeMiddlePosition - CURSOR_WIDTH;
+				if( leftElementWidth < MIN_WIDTH ) {
+					leftElementWidth = MIN_WIDTH;
+				}
 				leftElement.style.width = leftElementWidth + "px";
 				rightElement.style.width = "calc(100% - " + ( leftElementWidth + resizeElementWidth ) + "px)";
 				resizeMain();
@@ -200,7 +203,7 @@ var layout = ( function () {
 				submenu.appendChild( submenuItem );
 			}
 			let rect = this.getBoundingClientRect();
-			submenu.style.top = ( rect.bottom - 5 ) + "px";
+			submenu.style.top = ( rect.bottom - 2 ) + "px";
 			submenu.style.left = rect.left + "px";
 			submenu.style.display = "";
 			isOpenThisThread = true;

@@ -450,9 +450,9 @@ var file = ( function () {
 	}
 
 	function refreshFileView() {
-		let filesElement = document.querySelector( ".body > .files" );
-		filesElement.innerText = "";
-		createFileView( filesElement, m_files.content );
+		let $filesElement = $( ".files" );
+		$filesElement.find( "ul" ).remove();
+		createFileView( $filesElement.get( 0 ), m_files.content );
 		saveFiles( 100 );
 	}
 

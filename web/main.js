@@ -36,7 +36,7 @@ var main = ( function () {
 			menuArray.push( menuItem );
 		}
 
-		layout.createMenu( menuArray, document.querySelector( ".header" ) );
+		layout.createMenu( menuArray, document.querySelector( ".main-menu" ) );
 	}
 
 	function addMenuItem( menuName, title, shortcutName, shortcutKey, command ) {
