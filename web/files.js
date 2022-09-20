@@ -40,7 +40,6 @@ var file = ( function () {
 				"name": "main",
 				"fullname": "main.js",
 				"type": FILE_TYPE_SCRIPT,
-				"isOpen": true,
 				"path": "root",
 				"content": "" +
 					"$.screen( \"300x200\" );\n" +
@@ -62,6 +61,7 @@ var file = ( function () {
 	let m_recycleBin = [];
 	let m_tabsElement = null;
 	let m_saveTimeout = null;
+	let m_failedLastSave = false;
 
 	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
 	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
@@ -75,11 +75,14 @@ var file = ( function () {
 
 	function init() {
 		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
-		m_tabsElement = layout.createTabsElement( document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ), function ( tab ) {
-			let file = m_fileLookup[ tab.dataset.fileId ];
-			util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
-			fileSelected( file );
-		} );
+		m_tabsElement = layout.createTabsElement(
+			document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ),
+			function ( tab ) {
+				let file = m_fileLookup[ parseInt( tab.dataset.fileId ) ];
+				util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
+				fileSelected( file );
+			}
+		);
 		let filesStr = localStorage.getItem( "files" );
 		if( filesStr ) {
 			m_files = JSON.parse( filesStr );
@@ -87,6 +90,9 @@ var file = ( function () {
 		initFiles( m_files.content, m_files.fullname );
 		createFileView( filesElement, m_files.content, true );
 		filesElement.addEventListener( "click", clickFiles );
+		storage.onReady( function () {
+			updateFreespace();
+		} );
 	}
 
 	function initFiles( parentFolder, path ) {
@@ -117,6 +123,7 @@ var file = ( function () {
 
 	function createFileView( element, folder, init ) {
 		let ul = document.createElement( "ul" );
+		let selectedFile = null;
 		for( let i = 0; i < folder.length; i++ ) {
 			let file = folder[ i ];
 			let li = document.createElement( "li" );
@@ -132,12 +139,20 @@ var file = ( function () {
 			} else {
 				span.innerText = file.fullname;
 				if( init && file.isOpen ) {
-					openFile( file );
+					if( file.isOpen ) {
+						openFile( file );
+					}
+					if( file.isSelected ) {
+						selectedFile = file;
+					}
 				}
 			}
 			ul.appendChild( li );
 		}
 		element.appendChild( ul );
+		if( selectedFile ) {
+			openFile( selectedFile );
+		}
 	}
 
 	function openFile( file ) {
@@ -154,7 +169,6 @@ var file = ( function () {
 				file.model = editor.createModel( file.content, file.type );
 				file.model.onDidChangeContent( function () {
 					file.content = file.model.getValue();
-					saveFiles();
 				} );
 			}
 			editor.setModel( file.model );
@@ -169,7 +183,6 @@ var file = ( function () {
 				let img = new Image();
 				img.onload = function () {
 					if( img.naturalWidth < $imageViewer.width() ) {
-						//image-rendering: pixelated;
 						img.style.imageRendering = "pixelated";
 					}
 				}
@@ -179,6 +192,7 @@ var file = ( function () {
 				$imageViewer.data( "file", file.fullpath );
 			}
 		}
+		saveFiles();
 	}
 
 	function updateFolderName( element, file, isOpen ) {
@@ -255,7 +269,7 @@ var file = ( function () {
 
 	function selectFile( target ) {
 		util.selectItem( target, CLASS_NAMES.SELECTED_FILE );
-		let file = m_fileLookup[ target.dataset.fileId ];
+		let file = m_fileLookup[ parseInt( target.dataset.fileId ) ];
 
 		// Toggle the folder Open/Closed
 		if( target.dataset.fileType === FILE_TYPE_FOLDER ) {
@@ -335,7 +349,7 @@ var file = ( function () {
 	function getSelectedFiles() {
 		let selectedFiles = [];
 		document.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE ).forEach( ( selectedElement ) => {
-			selectedFiles.push( m_fileLookup[ selectedElement.dataset.fileId ] );
+			selectedFiles.push( m_fileLookup[ parseInt( selectedElement.dataset.fileId ) ] );
 		} );
 		return selectedFiles;
 	}
@@ -479,11 +493,11 @@ var file = ( function () {
 			//Populate list of all selected files --- do not need at this time
 			//selectedFiles = [];
 			//document.querySelectorAll( "." + CLASS_NAMES.SELECTED_FILE ).forEach( ( selectedElement ) => {
-			//	selectedFiles.push( m_fileLookup[ selectedElement.dataset.fileId ] );
+			//	selectedFiles.push( m_fileLookup[ parseInt( selectedElement.dataset.fileId ) ] );
 			//} );
 
 			// Get the last file selected in case of multi-selection
-			selectedFile = m_fileLookup[ m_lastFileClicked.dataset.fileId ];
+			selectedFile = m_fileLookup[ parseInt( m_lastFileClicked.dataset.fileId ) ];
 
 			// Setup the defaults
 			defaultName = selectedFile.name;
@@ -821,27 +835,71 @@ var file = ( function () {
 		return totalBytes;
 	}
 
+	function updateFreespace() {
+		let $fileSizeRemaining = $( ".file-size-remaining" );
+
+		if( m_failedLastSave ) {
+			$fileSizeRemaining.text( "OVER" );
+			$fileSizeRemaining.addClass( "msg-error" );
+		} else {
+			let freespace = storage.getFreeSpace();
+			$fileSizeRemaining.text( getMbKb( freespace ) );	
+			$fileSizeRemaining.removeClass( "msg-error" );
+		}
+	}
+
 	function saveFiles( delay ) {
 		if( isNaN( delay ) ) {
 			delay = SAVE_DELAY;
 		}
 		clearTimeout( m_saveTimeout );
+		updateFreespace();
 		m_saveTimeout = setTimeout( function () {
 			let filesClone = {};
-		
-			saveItem( m_files, filesClone );
-			localStorage.setItem( "files", JSON.stringify( filesClone ) );
 
-			function saveItem( item, clone ) {
+			// Find all the open tabs
+			let openTabs = [];
+			$( ".tab" ).each( function () {
+				openTabs.push( parseInt( this.dataset.fileId ) );
+			} );
+
+			// Get the selected tab
+			let selectedTab = null;
+			$( ".selected-tab" ).each( function () {
+				selectedTab = parseInt( this.dataset.fileId );
+			} );
+
+			cloneFiles( m_files, filesClone );
+			m_failedLastSave = false;
+			try {
+				localStorage.setItem( "files", JSON.stringify( filesClone ) );
+			} catch {
+				if( ! m_failedLastSave ) {
+					layout.createPopup( "Warning", "<p class='msg-error'>" +
+						"You are over the max storage capacity. " +
+						"Your changes will no longer be saved.</p>" );
+				}
+				m_failedLastSave = true;
+			} finally {
+				updateFreespace();
+			}
+
+			function cloneFiles( item, clone ) {
 				clone.name = item.name;
 				clone.fullname = item.fullname
 				clone.type = item.type;
 				clone.path = item.path;
+				if( openTabs.indexOf( item.id ) > -1 ) {
+					clone.isOpen = true;
+				}
+				if( item.id === selectedTab ) {
+					clone.isSelected = true;
+				}
 				if( clone.type === FILE_TYPE_FOLDER ) {
 					clone.content = [];
 					for( let i = 0; i < item.content.length; i++ ) {
 						let cloneItem = {};
-						saveItem( item.content[ i ], cloneItem );
+						cloneFiles( item.content[ i ], cloneItem );
 						clone.content.push( cloneItem );
 					}
 				} else {

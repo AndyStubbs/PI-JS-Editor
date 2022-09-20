@@ -103,10 +103,8 @@ var layout = ( function () {
 				let tabTitle = document.createElement( "span" );
 				let tabClose = document.createElement( "input" );
 				tabClose.type = "button";
-				tabClose.dataset.clickable = true;
 				tabClose.value = "X";
 				tabClose.className = "close-button";
-				newTab.dataset.clickable = true;
 				newTab.append( tabTitle );
 				newTab.append( tabClose );
 				newTab.className = "tab tab-" + tabData.id + " disable-select";            

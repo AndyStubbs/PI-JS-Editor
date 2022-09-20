@@ -19,6 +19,13 @@ html, body {
 	padding: 2.5px 0 2.5px 5px;
 }
 
+.file-size-remaining {
+	float: right;
+	font-style: italic;
+	color: rgb(215, 215, 215);
+	border-bottom: 2px dashed gray;
+}
+
 .menu-item {
 	padding: 5px 10px;
 	cursor: pointer;
@@ -204,11 +211,11 @@ html, body {
 }
 
 .button:hover {
-	opacity: 0.75;
+	background-color: rgb(75, 75, 75);
 }
 
 .button:disabled {
-    opacity: 0.75;
+    background-color: rgb(75, 75, 75);
 }
 
 .close-button {

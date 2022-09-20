@@ -1,13 +1,15 @@
 let storage = ( function () {
 	"use strict";
 
-	let totalCapacity = null;
+	let m_totalCapacity = null;
+	let m_readyCommands = [];
 
 	return {
 		"calculateLocalStorageCapacity": calculateLocalStorageCapacity,
-		"getTotalCapacity": function () { return totalCapacity; },
+		"getTotalCapacity": function () { return m_totalCapacity; },
 		"getStorageUsed": getStorageUsed,
-		"getFreeSpace": getFreeSpace
+		"getFreeSpace": getFreeSpace,
+		"onReady": onReady
 	};
 
 	function calculateLocalStorageCapacity() {
@@ -69,8 +71,11 @@ let storage = ( function () {
 		}
 		
 		function reportSize() {
-			totalCapacity = new Blob( Object.values( localStorage ) ).size;
+			m_totalCapacity = new Blob( Object.values( localStorage ) ).size;
 			localStorage.removeItem( "test" );
+			for( let i = 0; i < m_readyCommands.length; i++ ) {
+				m_readyCommands[ i ]();
+			}
 		}
 	}
 
@@ -79,10 +84,18 @@ let storage = ( function () {
 	}
 
 	function getFreeSpace() {
-		if( totalCapacity ) {
-			return totalCapacity - getStorageUsed();
+		if( m_totalCapacity ) {
+			return m_totalCapacity - getStorageUsed();
 		}
 		return null;
+	}
+
+	function onReady( cmd ) {
+		if( m_totalCapacity === null ) {
+			m_readyCommands.push( cmd );
+		} else {
+			cmd();
+		}
 	}
 
 } )();
