@@ -188,6 +188,8 @@ var file = ( function () {
 				}
 				img.src = file.content;
 				img.style.width = "100%";
+				img.style.height = "100%";
+				img.style.objectFit = "contain";
 				$imageViewer.append( img );
 				$imageViewer.data( "file", file.fullpath );
 			}
