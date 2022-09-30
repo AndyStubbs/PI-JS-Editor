@@ -10,7 +10,7 @@ var file = ( function () {
 	const FILE_TYPE_STYLE = "css";
 	const FILE_TYPE_SCRIPT = "javascript";
 	const FILE_TYPES = [
-		FILE_TYPE_SCRIPT, FILE_TYPE_FOLDER, FILE_TYPE_HTML, FILE_TYPE_STYLE
+		FILE_TYPE_SCRIPT, FILE_TYPE_FOLDER
 	];
 	const FILE_TYPE_EXTENSIONS = {
 		"javascript": ".js",
@@ -62,7 +62,14 @@ var file = ( function () {
 	let m_tabsElement = null;
 	let m_saveTimeout = null;
 	let m_failedLastSave = false;
+	let m_projectSettings = {
+		"name": "untitled",
+		"width": 800,
+		"height": 600
+	};
 
+	main.addMenuItem( "File", "Project Settings", "Ctrl+P", { "key": "P", "ctrlKey": true }, createProjectSettingsDialog );
+	main.addMenuItem( "File", "Run", "Ctrl+R", { "key": "R", "ctrlKey": true }, runProgram );
 	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
 	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
 	main.addMenuItem( "File", "Upload file", "Ctrl+U", { "key": "U", "ctrlKey": true }, createUploadDialog );	
@@ -83,9 +90,11 @@ var file = ( function () {
 				fileSelected( file );
 			}
 		);
-		let filesStr = localStorage.getItem( "files" );
-		if( filesStr ) {
-			m_files = JSON.parse( filesStr );
+		let dataStr = localStorage.getItem( "projectData" );
+		if( dataStr ) {
+			let data = JSON.parse( dataStr );
+			m_files = data.files;
+			m_projectSettings = data.settings;
 		}
 		initFiles( m_files.content, m_files.fullname );
 		createFileView( filesElement, m_files.content, true );
@@ -103,6 +112,21 @@ var file = ( function () {
 				initFiles( file.content, file.path + "/" + file.fullname );
 			}
 		}
+	}
+
+	function runProgram() {
+		let data = {
+			"action": "run",
+			"files": getFilesForSave(),
+			"title": m_projectSettings.name
+		};
+		$.post( "run.php", data, function ( url ) {
+			if( url ) {
+				let settings = "width=" + m_projectSettings.width + ", height=" + m_projectSettings.height + " top=200,left=200";
+				let w = window.open( url, "_blank", settings );
+				w.focus();
+			}
+		} );
 	}
 
 	function createFile( file, path, skipExtension ) {
@@ -470,6 +494,28 @@ var file = ( function () {
 		$filesElement.find( "ul" ).remove();
 		createFileView( $filesElement.get( 0 ), m_files.content );
 		saveFiles( 100 );
+	}
+
+	function createProjectSettingsDialog() {
+		let div = document.createElement( "div" );
+
+		div.innerHTML = "<p>" +
+			"<span>Name:</span>&nbsp;&nbsp;" +
+			"<input id='project-name' type='text' value='" + m_projectSettings.name + "' /> " +
+			"</p><p>" +
+			"<span>Window Width:</span>&nbsp;&nbsp;" +
+			"<input id='project-width' type='number' value='" + m_projectSettings.width + "' /> " +
+			"</p><p>" +
+			"<span>Window Height:</span>&nbsp;&nbsp;" +
+			"<input id='project-height' type='number' value='" + m_projectSettings.height + "' /></p>";
+
+		layout.createPopup( "Project Settings", div, { "okCommand": function () {
+			m_projectSettings.name = div.querySelector( "#project-name" ).value;
+			m_projectSettings.width = parseInt( div.querySelector( "#project-width" ).value );
+			m_projectSettings.height = parseInt( div.querySelector( "#project-height" ).value );
+			saveFiles( 100 );
+			return true;
+		}, "cancelCommand": function () {} } );
 	}
 
 	function createFileDialog( dialogType ) {
@@ -857,24 +903,14 @@ var file = ( function () {
 		clearTimeout( m_saveTimeout );
 		updateFreespace();
 		m_saveTimeout = setTimeout( function () {
-			let filesClone = {};
-
-			// Find all the open tabs
-			let openTabs = [];
-			$( ".tab" ).each( function () {
-				openTabs.push( parseInt( this.dataset.fileId ) );
-			} );
-
-			// Get the selected tab
-			let selectedTab = null;
-			$( ".selected-tab" ).each( function () {
-				selectedTab = parseInt( this.dataset.fileId );
-			} );
-
-			cloneFiles( m_files, filesClone );
+			let filesClone = getFilesForSave();
+			let data = {
+				"files": filesClone,
+				"settings": m_projectSettings
+			};
 			m_failedLastSave = false;
 			try {
-				localStorage.setItem( "files", JSON.stringify( filesClone ) );
+				localStorage.setItem( "projectData", JSON.stringify( data ) );
 			} catch {
 				if( ! m_failedLastSave ) {
 					layout.createPopup( "Warning", "<p class='msg-error'>" +
@@ -885,30 +921,50 @@ var file = ( function () {
 			} finally {
 				updateFreespace();
 			}
-
-			function cloneFiles( item, clone ) {
-				clone.name = item.name;
-				clone.fullname = item.fullname
-				clone.type = item.type;
-				clone.path = item.path;
-				if( openTabs.indexOf( item.id ) > -1 ) {
-					clone.isOpen = true;
-				}
-				if( item.id === selectedTab ) {
-					clone.isSelected = true;
-				}
-				if( clone.type === FILE_TYPE_FOLDER ) {
-					clone.content = [];
-					for( let i = 0; i < item.content.length; i++ ) {
-						let cloneItem = {};
-						cloneFiles( item.content[ i ], cloneItem );
-						clone.content.push( cloneItem );
-					}
-				} else {
-					clone.content = item.content;				
-				}
-			}
 		}, delay );
+	}
+
+	function getFilesForSave() {
+		let filesClone = {};
+
+		// Find all the open tabs
+		let openTabs = [];
+		$( ".tab" ).each( function () {
+			openTabs.push( parseInt( this.dataset.fileId ) );
+		} );
+
+		// Get the selected tab
+		let selectedTab = null;
+		$( ".selected-tab" ).each( function () {
+			selectedTab = parseInt( this.dataset.fileId );
+		} );
+
+		cloneFiles( m_files, filesClone );
+
+		function cloneFiles( item, clone ) {
+			clone.name = item.name;
+			clone.fullname = item.fullname
+			clone.type = item.type;
+			clone.path = item.path;
+			if( openTabs.indexOf( item.id ) > -1 ) {
+				clone.isOpen = true;
+			}
+			if( item.id === selectedTab ) {
+				clone.isSelected = true;
+			}
+			if( clone.type === FILE_TYPE_FOLDER ) {
+				clone.content = [];
+				for( let i = 0; i < item.content.length; i++ ) {
+					let cloneItem = {};
+					cloneFiles( item.content[ i ], cloneItem );
+					clone.content.push( cloneItem );
+				}
+			} else {
+				clone.content = item.content;				
+			}
+		}
+
+		return filesClone;
 	}
 
 } )();

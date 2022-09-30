@@ -227,7 +227,7 @@ var layout = ( function () {
 		}
 
 		function keyDown( e ) {
-			console.log( e );
+			// console.log( e );
 			let item = m_keys[ e.key.toUpperCase() ];
 			if( item ) {
 				if( e.ctrlKey === item.shortcutKey.ctrlKey ) {
