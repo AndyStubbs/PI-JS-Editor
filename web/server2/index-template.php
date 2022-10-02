@@ -1,3 +1,7 @@
+<?php
+	require( '../../config.php' );
+	require( '../../run.php' );
+?>
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -10,6 +14,7 @@
 		</style>
 	</head>
 	<body>
+		<?php print_r( $_SERVER['HTTP_REFERER'] ) ?>
 		[SCRIPTS]
 	</body>
 </html>

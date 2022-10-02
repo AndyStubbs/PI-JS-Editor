@@ -1,11 +1,11 @@
 <?php
 
-require( 'server/util.php' );
+require( '../app-config.php' );
+require( '../util.php' );
 
 session_start();
 
-$GLOBALS[ 'serverdir' ] = 'server';
-$GLOBALS[ 'runsdir' ] = $GLOBALS[ 'serverdir' ] . '/' . 'runs';
+$GLOBALS[ 'runsdir' ] = $GLOBALS[ 'server2dir' ] . '/' . 'runs';
 $GLOBALS[ 'projectpath' ] = '';
 $GLOBALS[ 'errors' ] = [];
 $GLOBALS[ 'scripts' ] = '';
@@ -36,17 +36,14 @@ function run( $file ) {
 	$GLOBALS[ 'projectpath' ] = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
 
 	buildFiles( $file );
-	$template = file_get_contents( $GLOBALS[ 'serverdir' ] . '/index-template.html' );
-
+	$template = file_get_contents( $GLOBALS[ 'server2dir' ] . '/index-template.php' );
 	$template = str_replace( '[TITLE]', htmlentities( $_POST[ 'title' ] ), $template );
 	$scripts = '<script src="../qbs.js"></script>' . "\n\t\t";
 	$scripts .= '<!-- MY SCRIPTS -->' . $GLOBALS[ 'scripts' ];
 	$template = str_replace( '[SCRIPTS]', $scripts, $template );
-	//echo $template;
-	//echo $GLOBALS[ 'projectpath' ] . '/index.html';
-	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.html', $template );
+	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.php', $template );
 	
-	echo $GLOBALS[ 'projectpath' ];
+	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
 }
 
 function buildFiles( $file ) {

@@ -2,6 +2,6 @@ node_modules/
 Thumbs.db
 npm-debug.log
 *.log
-web/server/runs/*
-!web/server/runs/qbs.js
-!web/server/runs/qbs.min.js
+web/server2/runs/*
+!web/server2/runs/qbs.js
+!web/server2/runs/qbs.min.js
