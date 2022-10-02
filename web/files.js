@@ -68,12 +68,13 @@ var file = ( function () {
 		"height": 600
 	};
 
-	main.addMenuItem( "File", "Project Settings", "Ctrl+P", { "key": "P", "ctrlKey": true }, createProjectSettingsDialog );
-	main.addMenuItem( "File", "Run", "Ctrl+R", { "key": "R", "ctrlKey": true }, runProgram );
-	main.addMenuItem( "File", "Create new file", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
-	main.addMenuItem( "File", "Edit/Update file", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
-	main.addMenuItem( "File", "Upload file", "Ctrl+U", { "key": "U", "ctrlKey": true }, createUploadDialog );	
-	main.addMenuItem( "File", "Delete file", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
+	main.addMenuItem( "File", "Project Settings", "Manage project settings.", "Ctrl+P", { "key": "P", "ctrlKey": true }, createProjectSettingsDialog );
+	main.addMenuItem( "File", "Run", "Uploads your files and runs in a seperate window.", "Ctrl+R", { "key": "R", "ctrlKey": true }, runProgram );
+	main.addMenuItem( "File", "Update Program", "Uploads your files but doesn't open a new window.", "Ctrl+U", { "key": "U", "ctrlKey": true }, updateProgram );
+	main.addMenuItem( "File", "Create new file", "New file dialog.", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
+	main.addMenuItem( "File", "Edit/Update file", "Edit file dialog.", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
+	main.addMenuItem( "File", "Upload file", "Upload a file to your project.", "Ctrl+L", { "key": "L", "ctrlKey": true }, createUploadDialog );	
+	main.addMenuItem( "File", "Delete file", "Delete a file from your project.", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
 
 	return {
 		"init": init,
@@ -127,6 +128,10 @@ var file = ( function () {
 				w.focus();
 			}
 		} );
+	}
+
+	function updateProgram() {
+		
 	}
 
 	function createFile( file, path, skipExtension ) {

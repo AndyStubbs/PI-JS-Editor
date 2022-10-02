@@ -198,6 +198,7 @@ var layout = ( function () {
 					submenu.style.display = "none";
 					isMenuOpen = false;
 				} );
+				submenuItem.title = subItem.title;
 				submenu.appendChild( submenuItem );
 			}
 			let rect = this.getBoundingClientRect();

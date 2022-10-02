@@ -39,10 +39,11 @@ var main = ( function () {
 		layout.createMenu( menuArray, document.querySelector( ".main-menu" ) );
 	}
 
-	function addMenuItem( menuName, title, shortcutName, shortcutKey, command ) {
+	function addMenuItem( menuName, name, title, shortcutName, shortcutKey, command ) {
 		let menuItem = {
-			"name": title,
+			"name": name,
 			"command": command,
+			"title": title,
 			"shortcutName": shortcutName,
 			"shortcutKey": shortcutKey
 		};
