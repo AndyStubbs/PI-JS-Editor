@@ -19,7 +19,8 @@ var editor = ( function () {
 		"init": init,
 		"resize": resize,
 		"createModel": createModel,
-		"setModel": setModel
+		"setModel": setModel,
+		"addCommand": addCommand
 	};
 
 	function init( containerElement ) {
@@ -62,5 +63,19 @@ var editor = ( function () {
 		for( let i = 0; i < editors.length; i++ ) {
 			editors[ i ].layout();    
 		}
+	}
+
+	function addCommand( name, command, keybindings ) {
+		activeEditor.addAction( {
+			"id": name,
+			"label": name,
+			"keybindings": keybindings,
+			"contextMenuGroupId": 'navigation',
+			"contextMenuOrder": 1.5,
+			"run": function( editor ) {
+				//alert( name );
+				command();
+			}
+		} );
 	}
 } )();

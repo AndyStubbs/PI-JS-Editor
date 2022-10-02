@@ -18,8 +18,8 @@ var main = ( function () {
 			document.querySelector( ".resize" ),
 			document.querySelector( ".main-editor" )
 		);
-		initMenu();
 		file.init();
+		initMenu();
 		storage.calculateLocalStorageCapacity();
 	}
 
@@ -39,13 +39,14 @@ var main = ( function () {
 		layout.createMenu( menuArray, document.querySelector( ".main-menu" ) );
 	}
 
-	function addMenuItem( menuName, name, title, shortcutName, shortcutKey, command ) {
+	function addMenuItem( menuName, name, title, shortcutName, keybindingsLocal, keybindingsMonaco, command ) {
 		let menuItem = {
 			"name": name,
 			"command": command,
 			"title": title,
 			"shortcutName": shortcutName,
-			"shortcutKey": shortcutKey
+			"keybindingsLocal": keybindingsLocal,
+			"keybindingsMonaco": keybindingsMonaco
 		};
 		menuItems[ menuName ].push( menuItem );
 	}

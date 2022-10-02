@@ -177,8 +177,11 @@ var layout = ( function () {
 			menuContainer.appendChild( element );
 
 			for( let j = 0; j < item.subItems.length; j++ ) {
-				if( item.subItems[ j ].shortcutKey ) {
-					m_keys[ item.subItems[ j ].shortcutKey.key ] = item.subItems[ j ];
+				if( item.subItems[ j ].keybindingsLocal ) {
+					m_keys[ item.subItems[ j ].keybindingsLocal.key ] = item.subItems[ j ];
+				}
+				if( item.subItems[ j ].keybindingsMonaco ) {
+					editor.addCommand( item.subItems[ j ].name, item.subItems[ j ].command, item.subItems[ j ].keybindingsMonaco );
 				}
 			}
 		}
@@ -231,7 +234,7 @@ var layout = ( function () {
 			// console.log( e );
 			let item = m_keys[ e.key.toUpperCase() ];
 			if( item ) {
-				if( e.ctrlKey === item.shortcutKey.ctrlKey ) {
+				if( e.ctrlKey === item.keybindingsLocal.ctrlKey ) {
 					item.command();
 					e.preventDefault();
 				}

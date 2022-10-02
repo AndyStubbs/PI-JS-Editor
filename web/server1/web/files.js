@@ -1,3 +1,4 @@
+/* global monaco */
 /* global editor */
 
 "use strict";
@@ -68,20 +69,41 @@ var file = ( function () {
 		"height": 600
 	};
 
-	main.addMenuItem( "File", "Project Settings", "Manage project settings.", "Ctrl+P", { "key": "P", "ctrlKey": true }, createProjectSettingsDialog );
-	main.addMenuItem( "File", "Run", "Uploads your files and runs in a seperate window.", "Ctrl+R", { "key": "R", "ctrlKey": true }, runProgram );
-	main.addMenuItem( "File", "Update Program", "Uploads your files but doesn't open a new window.", "Ctrl+U", { "key": "U", "ctrlKey": true }, updateProgram );
-	main.addMenuItem( "File", "Create new file", "New file dialog.", "Ctrl+F", { "key": "F", "ctrlKey": true }, function() { createFileDialog( "create" ); } );
-	main.addMenuItem( "File", "Edit/Update file", "Edit file dialog.", "Ctrl+E", { "key": "E", "ctrlKey": true }, function () { createFileDialog( "edit" ); } );
-	main.addMenuItem( "File", "Upload file", "Upload a file to your project.", "Ctrl+L", { "key": "L", "ctrlKey": true }, createUploadDialog );	
-	main.addMenuItem( "File", "Delete file", "Delete a file from your project.", "DEL", { "key": "DELETE", "ctrlKey": false }, deleteSelectedFiles );
-
 	return {
 		"init": init,
 		"createUploadDialog": createUploadDialog
 	};
 
 	function init() {
+		main.addMenuItem(
+			"File", "Project Settings", "Manage project settings.", "Ctrl+P", { "key": "P", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyP ], createProjectSettingsDialog
+		);
+		main.addMenuItem(
+			"File", "Run", "Uploads your files and runs in a seperate window.", "Ctrl+R", { "key": "R", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyR ], runProgram
+		);
+		main.addMenuItem(
+			"File", "Update Program", "Uploads your files but doesn't open a new window.", "Ctrl+U", { "key": "U", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyU ], updateProgram
+		);
+		main.addMenuItem(
+			"File", "Create new file", "New file dialog.", "Ctrl+G", { "key": "G", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG ], function() { createFileDialog( "create" );
+		} );
+		main.addMenuItem(
+			"File", "Edit/Update file", "Edit file dialog.", "Ctrl+E", { "key": "E", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyE ], function () { createFileDialog( "edit" ); }
+		);
+		main.addMenuItem(
+			"File", "Upload file", "Upload a file to your project.", "Ctrl+L", { "key": "L", "ctrlKey": true },
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyL ], createUploadDialog
+		);	
+		main.addMenuItem(
+			"File", "Delete file", "Delete a file from your project.", "DEL", { "key": "DELETE", "ctrlKey": false },
+			null, deleteSelectedFiles
+		);
+
 		let filesElement = document.querySelector( ".body > ." + CLASS_NAMES.FILES );
 		m_tabsElement = layout.createTabsElement(
 			document.querySelector( "." + CLASS_NAMES.MAIN_EDITOR_TABS ),
@@ -115,14 +137,14 @@ var file = ( function () {
 		}
 	}
 
-	function runProgram() {
+	function runProgram( noRun ) {
 		let data = {
 			"action": "run",
 			"files": getFilesForSave(),
 			"title": m_projectSettings.name
 		};
 		$.post( "app.php", data, function ( url ) {
-			if( url ) {
+			if( !noRun && url ) {
 				let settings = "width=" + m_projectSettings.width + ", height=" + m_projectSettings.height + " top=200,left=200";
 				let w = window.open( url, "_blank", settings );
 				w.focus();
@@ -131,7 +153,7 @@ var file = ( function () {
 	}
 
 	function updateProgram() {
-		
+		runProgram( true );
 	}
 
 	function createFile( file, path, skipExtension ) {
@@ -198,6 +220,7 @@ var file = ( function () {
 				file.model = editor.createModel( file.content, file.type );
 				file.model.onDidChangeContent( function () {
 					file.content = file.model.getValue();
+					saveFiles();
 				} );
 			}
 			editor.setModel( file.model );
