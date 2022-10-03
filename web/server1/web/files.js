@@ -590,12 +590,6 @@ var file = ( function () {
 				excludedFileTypes.push( FILE_TYPE_FOLDER );
 			}
 		}
-		// Removed because we are doing a modal popup and can only have one popup at a time
-		//let popup = document.querySelector( ".popup" );
-		//if( popup ) {
-		//	popup.focus();
-		//	return;
-		//}
 
 		// Create the popup contents
 		let div = document.createElement( "div" );
@@ -614,10 +608,16 @@ var file = ( function () {
 
 		// Build the HTML
 		div.className = "new-file-popup";
-		div.innerHTML = "<p>" +
-			"<span>File Type:</span>&nbsp;&nbsp;" +
-			"<select id='new-file-language'>" + typeOptions + "</select>" +
-			"</p><p>" +
+
+		let divContent = "";
+		if( dialogType !== "edit" ) {
+			divContent += "<p>" +
+				"<span>File Type:</span>&nbsp;&nbsp;" +
+				"<select id='new-file-language'>" + typeOptions + "</select>" +
+				"</p>";
+		}
+
+		divContent += "<p>" +
 			"<span>File Name:</span>&nbsp;&nbsp;" +
 			"<input id='new-file-name' type='text' value='" + defaultName + "' /> " +
 			"<span id='new-file-extension'>" + FILE_TYPE_EXTENSIONS[ defaultFileType ] + "</span>" + 
@@ -625,6 +625,8 @@ var file = ( function () {
 			"<span>Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" +
 			"</p><p id='new-file-message'>&nbsp;</p>";
+		
+		div.innerHTML = divContent;
 
 		// When a file name has changed
 		div.querySelector( "#new-file-name" ).addEventListener( "change", function () {
@@ -642,11 +644,15 @@ var file = ( function () {
 			}
 		} );
 
-		// When the language has changed
-		div.querySelector( "#new-file-language" ).addEventListener( "change", function () {
-			let language = div.querySelector( "#new-file-language" ).value;
-			div.querySelector( "#new-file-extension" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
-		} );
+		let language = defaultFileType;
+
+		if( dialogType !== "edit" ) {
+			// When the language has changed
+			div.querySelector( "#new-file-language" ).addEventListener( "change", function () {
+				language = div.querySelector( "#new-file-language" ).value;
+				div.querySelector( "#new-file-extension" ).innerText = FILE_TYPE_EXTENSIONS[ language ];
+			} );
+		}
 
 		// Create the create/update button
 		let createButton = document.createElement( "input" );
@@ -658,7 +664,9 @@ var file = ( function () {
 		createButton.addEventListener( "click", function () {
 
 			// Get all input values
-			let language = div.querySelector( "#new-file-language" ).value;
+			if( dialogType !== "edit" ) {
+				language = div.querySelector( "#new-file-language" ).value;
+			}
 			let name = div.querySelector( "#new-file-name" ).value;
 			let folderPath = div.querySelector( "#new-file-folder" ).value;
 			let filePath = folderPath + "/" + name + FILE_TYPE_EXTENSIONS[ language ];

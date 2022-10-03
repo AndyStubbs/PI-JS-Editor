@@ -232,6 +232,9 @@ var layout = ( function () {
 
 		function keyDown( e ) {
 			// console.log( e );
+			if( $( ".popup" ).length > 0 ) {
+				return;
+			}
 			let item = m_keys[ e.key.toUpperCase() ];
 			if( item ) {
 				if( e.ctrlKey === item.keybindingsLocal.ctrlKey ) {
