@@ -14,7 +14,6 @@
 		</style>
 	</head>
 	<body>
-		<?php print_r( $_SERVER['HTTP_REFERER'] ) ?>
 		[SCRIPTS]
 	</body>
 </html>

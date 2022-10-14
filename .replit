@@ -1,0 +1,7 @@
+run = "php -S 0.0.0.0:8000 -t ./web"
+entrypoint = "./server1/web/index.html"
+
+#https://replit.com/@AndyStubbs/PI-JS-Editor#web/server1/web/index.html
+
+[nix]
+channel = "stable-22_05"

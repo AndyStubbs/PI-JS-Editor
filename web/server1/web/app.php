@@ -34,11 +34,12 @@ function run( $file ) {
 		init();
 	}
 	$GLOBALS[ 'projectpath' ] = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
-
+	$GLOBALS[ 'projecturl' ] = $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
+	
 	buildFiles( $file );
 	$template = file_get_contents( $GLOBALS[ 'server2dir' ] . '/index-template.php' );
 	$template = str_replace( '[TITLE]', htmlentities( $_POST[ 'title' ] ), $template );
-	$scripts = '<script src="../qbs.js"></script>' . "\n\t\t";
+	$scripts = '<script src="' . $GLOBALS[ 'server2url' ] . '/qbs.js"></script>' . "\n\t\t";
 	$scripts .= '<!-- MY SCRIPTS -->' . $GLOBALS[ 'scripts' ];
 	$template = str_replace( '[SCRIPTS]', $scripts, $template );
 	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.php', $template );
@@ -55,7 +56,7 @@ function buildFiles( $file ) {
 		}
 	} else {
 		if( $file[ 'type' ] === 'javascript' ) {
-			$filename = $file[ 'name' ] . '.js';
+			$filename = $GLOBALS[ 'projecturl' ] . '/' . $file[ 'name' ] . '.js';
 			$filepath = $GLOBALS[ 'projectpath' ] . '/' . $file[ 'name' ] . '.js';
 			$GLOBALS[ 'scripts' ] .= "\n\t\t" . '<script src="' . $filename . '"></script>';
 			//echo $filename;
