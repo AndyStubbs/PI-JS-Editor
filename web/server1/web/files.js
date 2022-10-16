@@ -36,12 +36,14 @@ var file = ( function () {
 		"fullname": ROOT_NAME,
 		"type": FILE_TYPE_FOLDER,
 		"path": "",
+		"extension": "",
 		"content": [
 			{
 				"name": "main",
 				"fullname": "main.js",
 				"type": FILE_TYPE_SCRIPT,
 				"path": "root",
+				"extension": ".js",
 				"content": "" +
 					"$.screen( \"300x200\" );\n" +
 					"$.circle( 150, 100, 50, \"red\" );\n" +
@@ -156,17 +158,12 @@ var file = ( function () {
 		runProgram( true );
 	}
 
-	function createFile( file, path, skipExtension ) {
+	function createFile( file, path ) {
 		let fileId = ++m_lastFileId;
 		file.id = fileId;
 		file.path = path;
-		if( skipExtension ) {
-			file.fullname = file.name;
-			if( file.name.lastIndexOf( "." ) > -1 ) {
-				file.name = file.name.substring( 0, file.name.lastIndexOf( "." ) );
-			}
-		} else if( !file.fullname ) {
-			file.fullname = file.name + FILE_TYPE_EXTENSIONS[ file.type ];
+		if( !file.fullname ) {
+			file.fullname = file.name + file.extension;
 		}
 		file.fullpath = file.path + "/" + file.fullname;
 		m_fileLookup[ fileId ] = file;
@@ -553,6 +550,7 @@ var file = ( function () {
 		let defaultName = "untitled";
 		let defaultFolderName = ROOT_NAME;
 		let defaultFileType = FILE_TYPES[ 0 ];
+		let defaultExtension = FILE_TYPE_EXTENSIONS[ defaultFileType ];
 		let excludedFileTypes = [];
 		let selectedFile = null;
 
@@ -580,6 +578,7 @@ var file = ( function () {
 			fileDialogTitle = "Update File: " + selectedFile.fullname;
 			defaultFileType = selectedFile.type;
 			defaultFolderName = selectedFile.path;
+			defaultExtension = selectedFile.extension;
 			if( defaultFileType === FILE_TYPE_FOLDER ) {
 				for( let i = 0; i < FILE_TYPES.length; i++ ) {
 					if( FILE_TYPES[ i ] !== FILE_TYPE_FOLDER ) {
@@ -620,7 +619,7 @@ var file = ( function () {
 		divContent += "<p>" +
 			"<span>File Name:</span>&nbsp;&nbsp;" +
 			"<input id='new-file-name' type='text' value='" + defaultName + "' /> " +
-			"<span id='new-file-extension'>" + FILE_TYPE_EXTENSIONS[ defaultFileType ] + "</span>" + 
+			"<span id='new-file-extension'>" + defaultExtension + "</span>" + 
 			"</p><p>" +
 			"<span>Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" +
@@ -669,12 +668,18 @@ var file = ( function () {
 			}
 			let name = div.querySelector( "#new-file-name" ).value;
 			let folderPath = div.querySelector( "#new-file-folder" ).value;
-			let filePath = folderPath + "/" + name + FILE_TYPE_EXTENSIONS[ language ];
+			let fileExtension = FILE_TYPE_EXTENSIONS[ language ];
+			let filePath = folderPath + "/" + name + fileExtension;
 			let divMsg = document.getElementById( "new-file-message" );
 			let defaultOp = "Created file: ";
 
 			// If we are doing an update instead of create
 			if( dialogType === "edit" ) {
+
+				if( fileExtension === undefined ) {
+					fileExtension = selectedFile.extension;
+					filePath = folderPath + "/" + name + fileExtension;
+				}
 
 				// Find the destination file in case the location is different
 				let searchForFile = findFileByPath( filePath );
@@ -691,8 +696,7 @@ var file = ( function () {
 
 						// No need to move the file since it's already in the destination folder
 						selectedFile.name = name;
-						selectedFile.fullname = name + FILE_TYPE_EXTENSIONS[ language ];
-						selectedFile.language = language;
+						selectedFile.fullname = name + fileExtension;
 						if( selectedFile.type === FILE_TYPE_FOLDER ) {
 							repathFolder( selectedFile );
 						}
@@ -703,11 +707,11 @@ var file = ( function () {
 					// Store temp values in case move fails
 					let tempName = selectedFile.name;
 					let tempFullname = selectedFile.fullname;
-					let tempLanguage = selectedFile.language;
+					let tempExtension = selectedFile.extension;
 
 					selectedFile.name = name;
-					selectedFile.fullname = name + FILE_TYPE_EXTENSIONS[ language ];
-					selectedFile.language = language;
+					selectedFile.fullname = name + fileExtension;
+					selectedFile.extension = fileExtension;
 
 					// Only move if the path is different
 					if( selectedFile.path !== folderPath ) {
@@ -715,7 +719,7 @@ var file = ( function () {
 						if( moveStatus !== true ) {
 							selectedFile.name = tempName;
 							selectedFile.fullname = tempFullname;
-							selectedFile.language = tempLanguage;
+							selectedFile.extension = tempExtension;
 
 							divMsg.classList.remove( "msg-success" );
 							divMsg.classList.add( "msg-error" );
@@ -750,7 +754,8 @@ var file = ( function () {
 				let file = {
 					"name": name,
 					"type": language,
-					"content": content
+					"content": content,
+					"extension": fileExtension
 				};
 				parentFolder.push( file );
 				if( parent.path === "" ) {
@@ -816,26 +821,40 @@ var file = ( function () {
 		let parentFolder = parent.content;
 		let type = uploadedFile.type.indexOf( "javascript" ) > -1 ? "javascript" : "image";
 		let reader = new FileReader ();
-		let name = uploadedFile.name;
-		let filePath = folderPath + "/" + name;
-		let searchForFile = findFileByPath( filePath );
-		let index = 0;
-		while( searchForFile ) {
-			name = getUpdatedName( uploadedFile.name, ++index  );
-			filePath = folderPath + "/" + name;
-			searchForFile = findFileByPath( filePath );
-		}
+
+		// Runs after image is loaded
 		reader.onloadend = function ( ev ) {
+			let name = uploadedFile.name.substring( 0, uploadedFile.name.lastIndexOf( "." ) );
+			let content = reader.result;
+			let imageType = null;
+			let extension = ".js";
+			if( type === "image" ) {
+				imageType = content.substring( content.indexOf( "data:" ) + 5, content.indexOf( ";" ) );
+				extension = getExtensionFromImageType( imageType );
+			}
+			let fullname = name + extension;
+			let filePath = folderPath + "/" + fullname;
+			let searchForFile = findFileByPath( filePath );
+			let index = 0;
+			while( searchForFile ) {
+				name = getUpdatedName( name, ++index );
+				fullname = name + extension;
+				filePath = folderPath + "/" + fullname;
+				searchForFile = findFileByPath( filePath );
+			}
+			
 			let newFile = {
 				"name": name,
+				"fullname": fullname,
 				"type": type,
-				"content": reader.result
+				"content": content,
+				"extension": extension
 			};
 			parentFolder.push( newFile );
 			if( parent.path === "" ) {
-				createFile( newFile, ROOT_NAME, true );
+				createFile( newFile, ROOT_NAME );
 			} else {
-				createFile( newFile, parent.path + "/" + parent.fullname, true );
+				createFile( newFile, parent.path + "/" + parent.fullname );
 			}
 			refreshFileView();
 		};
@@ -846,12 +865,26 @@ var file = ( function () {
 		}
 	}
 
+	function getExtensionFromImageType( imageType ) {
+		let extensions = {
+			"image/bmp": ".bmp",
+			"image/gif": ".gif",
+			"image/jpeg": ".jpg",
+			"image/png": ".png",
+			"image/webp": ".webp"
+		};
+		if( extensions[ imageType ] ) {
+			return extensions[ imageType ];	
+		}
+		return extensions[ "image/png" ];
+	}
+
 	function getUpdatedName( name, index ) {
 		if( name.lastIndexOf( "." ) === -1 ) {
 			return name + "_" + ( index + "" ).padStart( 3, "0" );
 		}
 		let extension = name.substring( name.lastIndexOf( "." ) );
-		return name.substring( 0, name.lastIndexOf( "." ) ) + "_" + ( index + "" ).padStart( 2, "0" ) + extension;
+		return name.substring( 0, name.lastIndexOf( "." ) ) + "_" + ( index + "" ).padStart( 3, "0" ) + extension;
 	}
 
 	function checkFiles( div ) {
@@ -982,6 +1015,7 @@ var file = ( function () {
 			clone.fullname = item.fullname
 			clone.type = item.type;
 			clone.path = item.path;
+			clone.extension = item.extension;
 			if( openTabs.indexOf( item.id ) > -1 ) {
 				clone.isOpen = true;
 			}

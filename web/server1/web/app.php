@@ -21,22 +21,24 @@ switch( $_POST[ 'action' ] ) {
 }
 
 function init() {
-	$_SESSION[ 'project_id' ] = uniqidReal( 6 );
+	if( !isset( $_SESSION[ 'project_id' ] ) ) {
+		$_SESSION[ 'project_id' ] = uniqidReal( 6 );
+	}
+
 	$path = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
 	if ( file_exists( $path ) ) {
 		DeleteFolder( $path );
 	}
-	mkdir( $path, 0777, true );	
+	mkdir( $path, 0777, true );
+
+	$GLOBALS[ 'projectpath' ] = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
+	$GLOBALS[ 'projecturl' ] = $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
 }
 
 function run( $file ) {
-	if( !isset( $_SESSION[ 'project_id' ] ) ) {
-		init();
-	}
-	$GLOBALS[ 'projectpath' ] = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
-	$GLOBALS[ 'projecturl' ] = $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
-	
-	buildFiles( $file );
+	init();
+		
+	buildFiles( $file, '' );
 	$template = file_get_contents( $GLOBALS[ 'server2dir' ] . '/index-template.php' );
 	$template = str_replace( '[TITLE]', htmlentities( $_POST[ 'title' ] ), $template );
 	$scripts = '<script src="' . $GLOBALS[ 'server2url' ] . '/qbs.js"></script>' . "\n\t\t";
@@ -47,54 +49,78 @@ function run( $file ) {
 	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
 }
 
-function buildFiles( $file ) {
+function buildFiles( $file, $path ) {
 	// print_r( $file );
 	//echo $file[ 'name' ] . '\n';
+	//preg_replace( '/[\W]/', '', $str);
+	$name = preg_replace( '/[^a-zA-Z0-9_ \-\.]/', '', $file[ 'name' ] );
 	if( $file[ 'type' ] === "folder" ) {
+		if( $path . '/' . $name !== '/root' ) {
+			$newpath = $path . '/' . $name;
+			//echo 'Making dir: ' . $GLOBALS[ 'projectpath' ] . $newpath . "-- \n";
+			$status = mkdir( $GLOBALS[ 'projectpath' ] . $newpath, 0777, true );
+			if( !file_exists( $GLOBALS[ 'projectpath' ] . $newpath ) ) {
+				echo 'FAILED TO MAKE DIR: ' . $GLOBALS[ 'projectpath' ] . $newpath . "-- \n";
+			}
+		} else {
+			//echo 'Skipping root dir: ' . $path . "-- \n";
+			$newpath = $path;
+		}
 		foreach( $file[ 'content' ] as $subFile ) {
-			buildFiles( $subFile );
+			buildFiles( $subFile, $newpath );
 		}
 	} else {
 		if( $file[ 'type' ] === 'javascript' ) {
-			$filename = $GLOBALS[ 'projecturl' ] . '/' . $file[ 'name' ] . '.js';
-			$filepath = $GLOBALS[ 'projectpath' ] . '/' . $file[ 'name' ] . '.js';
+			$filename = $GLOBALS[ 'projecturl' ] . $path . '/' . $name . '.js';
+			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name. '.js';
 			$GLOBALS[ 'scripts' ] .= "\n\t\t" . '<script src="' . $filename . '"></script>';
-			//echo $filename;
 			file_put_contents( $filepath, $file[ 'content' ] );
-		} else {
-
+		} elseif ( $file[ 'type' ] === 'image' ) {
+			$filename = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
+			convertToImage( $file[ 'content' ], $filename );
 		}
 	}
 }
 
-function convertToImage( $b64 ) {
+function convertToImage( $content, $filename ) {
+	$start = strpos( $content, 'data:' ) + 5;
+	$end = strpos( $content, ';', $start );
+	$imageType = substr( $content, $start, $end - $start );
+	$b64 = substr( $content, strpos( $content, 'base64,' ) + 7 );
+
+	//echo $filename;
+	//echo " -- \n";
+	//echo $imageType;
+	//echo " -- \n";
+	//echo $b64;
+
 	// Obtain the original content (usually binary data)
 	$bin = base64_decode( $b64 );
 
 	// Load GD resource from binary data
-	$im = imageCreateFromString($bin);
+	$im = imageCreateFromString( $bin );
 
 	// Make sure that the GD library was able to load the image
 	// This is important, because you should not miss corrupted or unsupported images
 	if ( !$im ) {
-		die('Base64 value is not a valid image');
+		return;
 	}
-
-	// Specify the location where you want to save the image
-	$img_file = '/files/images/filename.png';
-
-	// Save the GD resource as PNG in the best possible quality (no compression)
-	// This will strip any metadata or invalid contents (including, the PHP backdoor)
-	// To block any possible exploits, consider increasing the compression level
-	imagepng($im, $img_file, 0);
-
-	/*
-	$code_base64 = $row['content'];
-	$code_base64 = str_replace('data:image/jpeg;base64,','',$code_base64);
-	$code_binary = base64_decode($code_base64);
-	$image= imagecreatefromstring($code_binary);
-	header('Content-Type: image/jpeg');
-	imagejpeg($image);
-	imagedestroy($image);
-	*/
+	switch( $imageType ) {
+   		case 'image/bmp':
+			imagebmp( $im, $filename . '.bmp' );
+			break;
+		case 'image/gif':
+			imagegif( $im, $filename . '.gif' );
+			break;
+		case 'image/jpeg':
+			imagejpg( $im, $filename . '.jpg' );
+			break;
+		case 'image/png':
+			imagepng( $im, $filename . '.png' );
+			break;
+		case 'image/webp':
+			imagewebp( $im, $filename . '.webp' );
+			break;
+		default: return false;
+	}
 }
