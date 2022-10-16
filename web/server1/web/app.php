@@ -46,7 +46,7 @@ function run( $file ) {
 	$template = str_replace( '[SCRIPTS]', $scripts, $template );
 	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.php', $template );
 	
-	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
+	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ] . '/';
 }
 
 function buildFiles( $file, $path ) {
@@ -71,13 +71,17 @@ function buildFiles( $file, $path ) {
 		}
 	} else {
 		if( $file[ 'type' ] === 'javascript' ) {
-			$filename = $GLOBALS[ 'projecturl' ] . $path . '/' . $name . '.js';
+			if( $path !== '' ) {
+				$filename = $path . '/' . $name . '.js';	
+			} else {
+				$filename = $name . '.js';
+			}
 			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name. '.js';
 			$GLOBALS[ 'scripts' ] .= "\n\t\t" . '<script src="' . $filename . '"></script>';
 			file_put_contents( $filepath, $file[ 'content' ] );
 		} elseif ( $file[ 'type' ] === 'image' ) {
-			$filename = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
-			convertToImage( $file[ 'content' ], $filename );
+			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
+			convertToImage( $file[ 'content' ], $filepath );
 		}
 	}
 }
