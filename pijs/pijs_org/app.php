@@ -1,7 +1,11 @@
 <?php
 
-require( '../app-config.php' );
 require( '../util.php' );
+
+$GLOBALS[ 'server1dir' ] = '';
+$GLOBALS[ 'server2dir' ] = '../pijs-run_org';
+$GLOBALS[ 'server1url' ] = '/pijs_org';
+$GLOBALS[ 'server2url' ] = '/pijs-run_org/runs';
 
 session_start();
 
@@ -39,7 +43,7 @@ function run( $file ) {
 	init();
 		
 	buildFiles( $file, '' );
-	$template = file_get_contents( $GLOBALS[ 'server2dir' ] . '/index-template.php' );
+	$template = file_get_contents( '../index-template.php' );
 	$template = str_replace( '[TITLE]', htmlentities( $_POST[ 'title' ] ), $template );
 	$scripts = '<script src="' . $GLOBALS[ 'server2url' ] . '/qbs.js"></script>' . "\n\t\t";
 	$scripts .= '<!-- MY SCRIPTS -->' . $GLOBALS[ 'scripts' ];

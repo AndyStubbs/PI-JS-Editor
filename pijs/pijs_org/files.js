@@ -145,7 +145,7 @@ var file = ( function () {
 			"files": getFilesForSave(),
 			"title": m_projectSettings.name
 		};
-		$.post( "/server1/web/app.php", data, function ( url ) {
+		$.post( "app.php", data, function ( url ) {
 			if( !noRun && url ) {
 				let settings = "width=" + m_projectSettings.width + ", height=" + m_projectSettings.height + " top=200,left=200";
 				let w = window.open( url, "_blank", settings );

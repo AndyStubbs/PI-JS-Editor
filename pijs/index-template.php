@@ -1,6 +1,6 @@
 <?php
-	require( '../../config.php' );
-	require( '../../run.php' );
+	require( '../../../config.php' );
+	require( '../../../run.php' );
 ?>
 <!DOCTYPE html>
 <html lang="en">
