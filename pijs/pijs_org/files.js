@@ -113,6 +113,7 @@ var file = ( function () {
 				let file = m_fileLookup[ parseInt( tab.dataset.fileId ) ];
 				util.selectItem( tab, CLASS_NAMES.SELECTED_TAB );
 				fileSelected( file );
+				editor.resize();
 			}
 		);
 		let dataStr = localStorage.getItem( "projectData" );
