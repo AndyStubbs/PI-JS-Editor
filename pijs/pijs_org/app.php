@@ -49,7 +49,7 @@ function run( $file ) {
 	$scripts .= '<!-- MY SCRIPTS -->' . $GLOBALS[ 'scripts' ];
 	$template = str_replace( '[SCRIPTS]', $scripts, $template );
 	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.php', $template );
-	
+	touch( $GLOBALS[ 'projectpath' ] );
 	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ] . '/';
 }
 
