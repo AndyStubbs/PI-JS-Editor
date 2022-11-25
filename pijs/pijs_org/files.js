@@ -895,8 +895,7 @@ var file = ( function () {
 			"image/gif": ".gif",
 			"image/jpeg": ".jpg",
 			"image/png": ".png",
-			"image/webp": ".webp",
-			"image/svg+xml": ".svg"
+			"image/webp": ".webp"
 		};
 		if( extensions[ imageType ] ) {
 			return extensions[ imageType ];	
