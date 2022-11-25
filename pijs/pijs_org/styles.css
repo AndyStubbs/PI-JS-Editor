@@ -290,3 +290,7 @@ html, body {
     margin-top: 100px;
     font-size: xxx-large;
 }
+
+.main-audio-viewer {
+	padding: 15px;
+}

@@ -86,6 +86,9 @@ function buildFiles( $file, $path ) {
 		} elseif ( $file[ 'type' ] === 'image' ) {
 			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
 			convertToImage( $file[ 'content' ], $filepath );
+		} elseif ( $file[ 'type' ] === 'audio' ) {
+			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
+			convertToAudio( $file[ 'content' ], $filepath );
 		}
 	}
 }
@@ -131,4 +134,48 @@ function convertToImage( $content, $filename ) {
 			break;
 		default: return false;
 	}
+}
+
+function convertToAudio( $content, $filename ) {
+	$start = strpos( $content, 'data:' ) + 5;
+	$end = strpos( $content, ';', $start );
+	$audioType = substr( $content, $start, $end - $start );
+	$b64 = substr( $content, strpos( $content, 'base64,' ) + 7 );
+
+	// Obtain the original content (usually binary data)
+	$bin = base64_decode( $b64 );
+
+	// Get the extension from audioType
+	switch( $audioType ) {
+		case 'audio/wave':
+			$filename .= '.wav';
+			break;
+		case 'audio/wav':
+			$filename .= '.wav';
+			break;
+		case 'audio/x-wav':
+			$filename .= '.wav';
+			break;
+		case 'audio/x-pn-wav':
+			$filename .= '.wav';
+			break;
+		case 'audio/webm':
+			$filename .= '.webm';
+			break;
+		case 'audio/ogg':
+			$filename .= '.ogg';
+			break;
+		case 'audio/mpeg':
+			$filename .= '.mp3';
+			break;
+		case 'audio/mid':
+			$filename .= '.mid';
+			break;
+		case 'audio/mp4':
+			$filename .= '.mp4';
+			break;
+		default:
+			return;
+	}
+	file_put_contents( $filename, $bin );
 }

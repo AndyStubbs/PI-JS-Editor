@@ -10,6 +10,8 @@ var file = ( function () {
 	const FILE_TYPE_HTML = "html";
 	const FILE_TYPE_STYLE = "css";
 	const FILE_TYPE_SCRIPT = "javascript";
+	const FILE_TYPE_IMAGE = "image";
+	const FILE_TYPE_AUDIO = "audio";
 	const FILE_TYPES = [
 		FILE_TYPE_SCRIPT, FILE_TYPE_FOLDER
 	];
@@ -213,6 +215,7 @@ var file = ( function () {
 	function fileSelected( file ) {
 		if( file.type === FILE_TYPE_SCRIPT ) {
 			$( ".main-image-viewer" ).hide();
+			$( ".main-audio-viewer" ).hide();
 			$( ".main-editor-body" ).show();
 			if( !file.model ) {
 				file.model = editor.createModel( file.content, file.type );
@@ -222,13 +225,15 @@ var file = ( function () {
 				} );
 			}
 			editor.setModel( file.model );
-		} else {
+		} else if( file.type === FILE_TYPE_IMAGE ) {
 			let $imageViewer = $( ".main-image-viewer" );
 			if( $imageViewer.data( "file" ) === file.fullpath ) {
 				$( ".main-editor-body" ).hide();
-				$imageViewer.show();	
+				$( ".main-audio-viewer" ).hide();
+				$imageViewer.show();
 			} else {
 				$( ".main-editor-body" ).hide();
+				$( ".main-audio-viewer" ).hide();
 				$imageViewer.html( "" ).show();
 				let img = new Image();
 				img.onload = function () {
@@ -243,6 +248,11 @@ var file = ( function () {
 				$imageViewer.append( img );
 				$imageViewer.data( "file", file.fullpath );
 			}
+		} else if( file.type === FILE_TYPE_AUDIO ) {
+			$( ".main-image-viewer" ).hide();
+			$( ".main-editor-body" ).hide();
+			$( "#main-audio-player" ).get( 0 ).src = file.content;
+			$( ".main-audio-viewer" ).show();
 		}
 		saveFiles();
 	}
@@ -782,7 +792,7 @@ var file = ( function () {
 		let div = document.createElement( "div" );
 		let folderOptions = createFolderOptions();
 		let freespaceMB = getMbKb( storage.getFreeSpace() );
-		div.innerHTML = "<p><input id='fileUploads' type='file' accept='image/*,.js,.zip' multiple></p>" +
+		div.innerHTML = "<p><input id='fileUploads' type='file' accept='audio/*,image/*,.js,.zip' multiple></p>" +
 			"Storage Available: " + freespaceMB + "<br />" +
 			"File(s) Selected: <span id='fileCount'></span><br />" +
 			"File(s) Size: <span id='fileSize'></span><br />" +
@@ -820,18 +830,31 @@ var file = ( function () {
 	function saveUploadedFile( uploadedFile, folderPath ) {
 		let parent = findFileByPath( folderPath );
 		let parentFolder = parent.content;
-		let type = uploadedFile.type.indexOf( "javascript" ) > -1 ? "javascript" : "image";
+		let type = "";
 		let reader = new FileReader ();
+
+		if( uploadedFile.type.indexOf( "javascript" ) > -1 ) {
+			type = FILE_TYPE_SCRIPT;
+		} else if( uploadedFile.type.indexOf( "image" ) > -1 ) {
+			type = FILE_TYPE_IMAGE;
+		} else if( uploadedFile.type.indexOf( "audio" ) > -1 ) {
+			type = FILE_TYPE_AUDIO;
+		}
 
 		// Runs after image is loaded
 		reader.onloadend = function ( ev ) {
 			let name = uploadedFile.name.substring( 0, uploadedFile.name.lastIndexOf( "." ) );
 			let content = reader.result;
 			let imageType = null;
+			let audioType = null;
 			let extension = ".js";
-			if( type === "image" ) {
+			if( type === FILE_TYPE_IMAGE ) {
 				imageType = content.substring( content.indexOf( "data:" ) + 5, content.indexOf( ";" ) );
 				extension = getExtensionFromImageType( imageType );
+			}
+			if( type === FILE_TYPE_AUDIO ) {
+				audioType = content.substring( content.indexOf( "data:" ) + 5, content.indexOf( ";" ) );
+				extension = getExtensionFromAudioType( audioType );
 			}
 			let fullname = name + extension;
 			let filePath = folderPath + "/" + fullname;
@@ -872,12 +895,31 @@ var file = ( function () {
 			"image/gif": ".gif",
 			"image/jpeg": ".jpg",
 			"image/png": ".png",
-			"image/webp": ".webp"
+			"image/webp": ".webp",
+			"image/svg+xml": ".svg"
 		};
 		if( extensions[ imageType ] ) {
 			return extensions[ imageType ];	
 		}
 		return extensions[ "image/png" ];
+	}
+
+	function getExtensionFromAudioType( audioType ) {
+		let extensions = {
+			"audio/wave": ".wav",
+			"audio/wav": ".wav",
+			"audio/x-wav": ".wav",
+			"audio/x-pn-wav": ".wav",
+			"audio/webm": ".webm",
+			"audio/ogg": ".ogg",
+			"audio/mpeg": ".mp3",
+			"audio/mid": ".mid",
+			"audio/mp4": ".mp4"
+		};
+		if( extensions[ audioType ] ) {
+			return extensions[ audioType ];	
+		}
+		return extensions[ "audio/mpeg" ];
 	}
 
 	function getUpdatedName( name, index ) {
@@ -935,7 +977,8 @@ var file = ( function () {
 		Array.from( files ).forEach( ( file ) => {
 			if( 
 				file.type.indexOf( "javascript" ) === -1 &&
-				file.type.indexOf( "image" ) === -1
+				file.type.indexOf( "image" ) === -1 &&
+				file.type.indexOf( "audio" ) === -1
 			) {
 				badFiles.push( file );
 			} else {
