@@ -39,6 +39,7 @@ var file = ( function () {
 		"type": FILE_TYPE_FOLDER,
 		"path": "",
 		"extension": "",
+		"isChanged": true,
 		"content": [
 			{
 				"name": "main",
@@ -72,6 +73,7 @@ var file = ( function () {
 		"width": 800,
 		"height": 600
 	};
+	let m_hasProjectRun = false;
 
 	return {
 		"init": init,
@@ -85,7 +87,7 @@ var file = ( function () {
 		);
 		main.addMenuItem(
 			"File", "Run", "Uploads your files and runs in a seperate window.", "Ctrl+R", { "key": "R", "ctrlKey": true },
-			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyR ], runProgram
+			[ monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyR ], function () { runProgram( false, true ); }
 		);
 		main.addMenuItem(
 			"File", "Update Program", "Uploads your files but doesn't open a new window.", "Ctrl+U", { "key": "U", "ctrlKey": true },
@@ -142,13 +144,24 @@ var file = ( function () {
 		}
 	}
 
-	function runProgram( noRun ) {
+	function runProgram( noRun, getOnlyRecentChanges ) {
+		if( getOnlyRecentChanges === undefined ) {
+			getOnlyRecentChanges = true;
+		}
 		let data = {
 			"action": "run",
-			"files": getFilesForSave(),
-			"title": m_projectSettings.name
+			"files": getFilesForSave( getOnlyRecentChanges ),
+			"title": m_projectSettings.name,
+			"has_project_run": m_hasProjectRun
 		};
-		$.post( "app.php", data, function ( url ) {
+		$.post( "app.php", data, function ( dataReturn ) {
+			if( dataReturn.needsRefresh ) {
+				runProgram( noRun, false );
+				return;
+			}
+			m_hasProjectRun = true;
+			resetFilesChanged( m_files );
+			let url = dataReturn.url;
 			if( !noRun && url ) {
 				let settings = "width=" + m_projectSettings.width + ", height=" + m_projectSettings.height + " top=200,left=200";
 				let w = window.open( url, "_blank", settings );
@@ -158,7 +171,7 @@ var file = ( function () {
 	}
 
 	function updateProgram() {
-		runProgram( true );
+		runProgram( true, true );
 	}
 
 	function createFile( file, path ) {
@@ -169,6 +182,7 @@ var file = ( function () {
 			file.fullname = file.name + file.extension;
 		}
 		file.fullpath = file.path + "/" + file.fullname;
+		file.isChanged = true;
 		m_fileLookup[ fileId ] = file;
 	}
 
@@ -221,6 +235,7 @@ var file = ( function () {
 				file.model = editor.createModel( file.content, file.type );
 				file.model.onDidChangeContent( function () {
 					file.content = file.model.getValue();
+					file.isChanged = true;
 					saveFiles();
 				} );
 			}
@@ -493,6 +508,7 @@ var file = ( function () {
 			file.path = newParent.path + "/" + newParent.fullname;
 		}
 
+		file.isChanged = true;
 		if( file.type === FILE_TYPE_FOLDER ) {
 			repathFolder( file );
 		}
@@ -519,6 +535,7 @@ var file = ( function () {
 		let path = folder.path + "/" + folder.fullname;
 		for( let i = 0; i < folder.content.length; i++ ) {
 			folder.content[ i ].path = path;
+			folder.content[ i ].isChanged = true;
 			if( folder.content[ i ].type === FILE_TYPE_FOLDER ) {
 				repathFolder( folder.content[ i ] );
 			}
@@ -708,6 +725,7 @@ var file = ( function () {
 						// No need to move the file since it's already in the destination folder
 						selectedFile.name = name;
 						selectedFile.fullname = name + fileExtension;
+						selectedFile.isChanged = true;
 						if( selectedFile.type === FILE_TYPE_FOLDER ) {
 							repathFolder( selectedFile );
 						}
@@ -723,6 +741,7 @@ var file = ( function () {
 					selectedFile.name = name;
 					selectedFile.fullname = name + fileExtension;
 					selectedFile.extension = fileExtension;
+					selectedFile.isChanged = true;
 
 					// Only move if the path is different
 					if( selectedFile.path !== folderPath ) {
@@ -1036,7 +1055,16 @@ var file = ( function () {
 		}, delay );
 	}
 
-	function getFilesForSave() {
+	function resetFilesChanged( file ) {
+		file.isChanged = false;
+		if( file.type === FILE_TYPE_FOLDER ) {
+			for( let i = 0; i < file.content.length; i++ ) {
+				resetFilesChanged( file.content[ i ] );
+			}
+		}
+	}
+
+	function getFilesForSave( isRecentChangesOnly ) {
 		let filesClone = {};
 
 		// Find all the open tabs
@@ -1073,7 +1101,13 @@ var file = ( function () {
 					clone.content.push( cloneItem );
 				}
 			} else {
-				clone.content = item.content;				
+				if( isRecentChangesOnly ) {
+					if( item.isChanged ) {
+						clone.content = item.content;
+					}
+				} else {
+					clone.content = item.content;
+				}
 			}
 		}
 

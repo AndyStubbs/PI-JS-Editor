@@ -13,6 +13,7 @@ $GLOBALS[ 'runsdir' ] = $GLOBALS[ 'server2dir' ] . '/' . 'runs';
 $GLOBALS[ 'projectpath' ] = '';
 $GLOBALS[ 'errors' ] = [];
 $GLOBALS[ 'scripts' ] = '';
+$GLOBALS[ 'projectfiles' ] = [];
 
 switch( $_POST[ 'action' ] ) {
 	case 'init':
@@ -20,27 +21,36 @@ switch( $_POST[ 'action' ] ) {
 		break;
 	case 'run':
 		// print_r( $_POST );
-		run( $_POST[ 'files' ] );
+		run( $_POST[ 'files' ], $_POST[ 'has_project_run' ] );
 		break;
 }
 
 function init() {
 	if( !isset( $_SESSION[ 'project_id' ] ) ) {
 		$_SESSION[ 'project_id' ] = uniqidReal( 6 );
+		$newSession = true;
+	} else {
+		$newSession = false;
 	}
 
 	$path = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
-	if ( file_exists( $path ) ) {
-		DeleteFolder( $path );
+	if( file_exists( $path ) ) {
+		if( $newSession ) {
+			DeleteFolder( $path );
+			mkdir( $path, 0777, true );
+		}
+	} else {
+		mkdir( $path, 0777, true );
 	}
-	mkdir( $path, 0777, true );
 
 	$GLOBALS[ 'projectpath' ] = $GLOBALS[ 'runsdir' ] . '/' . $_SESSION[ 'project_id' ];
 	$GLOBALS[ 'projecturl' ] = $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ];
+
+	return $newSession;
 }
 
-function run( $file ) {
-	init();
+function run( $file, $hasProjectRun ) {
+	$isNewSession = init();
 		
 	buildFiles( $file, '' );
 	$template = file_get_contents( '../index-template.php' );
@@ -50,21 +60,32 @@ function run( $file ) {
 	$template = str_replace( '[SCRIPTS]', $scripts, $template );
 	file_put_contents( $GLOBALS[ 'projectpath' ] . '/index.php', $template );
 	touch( $GLOBALS[ 'projectpath' ] );
-	echo $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ] . '/';
+	
+	$data = new stdClass();
+	$data->url = $GLOBALS[ 'server2url' ] . '/' . $_SESSION[ 'project_id' ] . '/';
+
+	// If a project has run previously but a new session gets created then
+	// we need to resend all the data and not just the changes
+	if( $isNewSession && $hasProjectRun ) {
+		$data->needsRefresh = true;
+	} else {
+		$data->needsRefresh = false;
+	}
+
+	header( 'Content-type: application/json' );
+	echo json_encode( $data );
 }
 
 function buildFiles( $file, $path ) {
-	// print_r( $file );
-	//echo $file[ 'name' ] . '\n';
-	//preg_replace( '/[\W]/', '', $str);
 	$name = preg_replace( '/[^a-zA-Z0-9_ \-\.]/', '', $file[ 'name' ] );
 	if( $file[ 'type' ] === "folder" ) {
 		if( $path . '/' . $name !== '/root' ) {
 			$newpath = $path . '/' . $name;
 			//echo 'Making dir: ' . $GLOBALS[ 'projectpath' ] . $newpath . "-- \n";
-			$status = mkdir( $GLOBALS[ 'projectpath' ] . $newpath, 0777, true );
 			if( !file_exists( $GLOBALS[ 'projectpath' ] . $newpath ) ) {
-				echo 'FAILED TO MAKE DIR: ' . $GLOBALS[ 'projectpath' ] . $newpath . "-- \n";
+				mkdir( $GLOBALS[ 'projectpath' ] . $newpath, 0777, true );
+			} else {
+				touch( $GLOBALS[ 'projectpath' ] . $newpath );
 			}
 		} else {
 			//echo 'Skipping root dir: ' . $path . "-- \n";
@@ -82,13 +103,26 @@ function buildFiles( $file, $path ) {
 			}
 			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name. '.js';
 			$GLOBALS[ 'scripts' ] .= "\n\t\t" . '<script src="' . $filename . '"></script>';
-			file_put_contents( $filepath, $file[ 'content' ] );
+			//array_key_exists(array_key, array_name)
+			if( array_key_exists( 'content', $file ) ) {
+				file_put_contents( $filepath, $file[ 'content' ] );	
+			} else {
+				touch( $filepath );
+			}
 		} elseif ( $file[ 'type' ] === 'image' ) {
 			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
-			convertToImage( $file[ 'content' ], $filepath );
+			if( array_key_exists( 'content', $file ) ) {
+				convertToImage( $file[ 'content' ], $filepath );
+			} else {
+				touch( $filepath );
+			}
 		} elseif ( $file[ 'type' ] === 'audio' ) {
 			$filepath = $GLOBALS[ 'projectpath' ] . $path . '/' . $name;
-			convertToAudio( $file[ 'content' ], $filepath );
+			if( array_key_exists( 'content', $file ) ) {
+				convertToAudio( $file[ 'content' ], $filepath );
+			} else {
+				touch( $filepath );
+			}
 		}
 	}
 }
