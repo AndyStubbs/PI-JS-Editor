@@ -77,7 +77,8 @@ var file = ( function () {
 
 	return {
 		"init": init,
-		"createUploadDialog": createUploadDialog
+		"createUploadDialog": createUploadDialog,
+		"getFileName": getFileName
 	};
 
 	function init() {
@@ -132,6 +133,11 @@ var file = ( function () {
 		storage.onReady( function () {
 			updateFreespace();
 		} );
+	}
+
+	function getFileName( id ) {
+		let file = m_fileLookup[ parseInt( id ) ];
+		return file.fullname;
 	}
 
 	function initFiles( parentFolder, path ) {
@@ -546,6 +552,7 @@ var file = ( function () {
 		let $filesElement = $( ".files" );
 		$filesElement.find( "ul" ).remove();
 		createFileView( $filesElement.get( 0 ), m_files.content );
+		m_tabsElement.refreshTabs();
 		saveFiles( 100 );
 	}
 

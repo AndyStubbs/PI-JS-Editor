@@ -142,9 +142,18 @@ var layout = ( function () {
 			}
 		}
 
+		function refreshTabs() {
+			let tabs = f_tabsContainer.querySelectorAll( ".tab" );
+			for( let i = 0; i < tabs.length; i++ ) {
+				let name = file.getFileName( parseInt( tabs[ i ].dataset.fileId ) );
+				tabs[ i ].querySelector( "span" ).innerText = name;
+			}
+		}
+
 		return {
 			"createTab": createTab,
-			"closeTab": closeTab
+			"closeTab": closeTab,
+			"refreshTabs": refreshTabs
 		};
 	}
 
