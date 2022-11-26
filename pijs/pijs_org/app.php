@@ -106,7 +106,6 @@ function buildFiles( $file, $path ) {
 				$filename = substr( $filename, 1 );
 			}
 			$GLOBALS[ 'scripts' ] .= "\n\t\t" . '<script src="' . $filename . '"></script>';
-			//array_key_exists(array_key, array_name)
 			if( array_key_exists( 'content', $file ) ) {
 				file_put_contents( $filepath, $file[ 'content' ] );	
 			} else {
