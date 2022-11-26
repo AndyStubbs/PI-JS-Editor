@@ -210,6 +210,10 @@ html, body {
     width: 58px;
 }
 
+.button-wide {
+	width: 130px;
+}
+
 .button:hover {
 	background-color: rgb(75, 75, 75);
 }

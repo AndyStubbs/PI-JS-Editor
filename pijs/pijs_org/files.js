@@ -4,6 +4,24 @@
 "use strict";
 
 var file = ( function () {
+	const HTML_TEMPLATE = "" +
+`
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>[TITLE]</title>
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+		<style>
+			body {
+				background-color: black;
+			}
+		</style>
+	</head>
+	<body>
+		[SCRIPTS]
+	</body>
+</html>
+`;
 	const OPEN_FOLDER_ENTITY = "&darr;";
 	const CLOSED_FOLDER_ENTITY = "&rarr;"
 	const FILE_TYPE_FOLDER = "folder";
@@ -567,15 +585,66 @@ var file = ( function () {
 			"<input id='project-width' type='number' value='" + m_projectSettings.width + "' /> " +
 			"</p><p>" +
 			"<span>Window Height:</span>&nbsp;&nbsp;" +
-			"<input id='project-height' type='number' value='" + m_projectSettings.height + "' /></p>";
+			"<input id='project-height' type='number' value='" + m_projectSettings.height + "' />" +
+			"</p><p>" +
+			"<input id='btn-download-project' type='button' value='Download Project' class='button button-wide' />" +
+			"</p>";
 
 		layout.createPopup( "Project Settings", div, { "okCommand": function () {
-			m_projectSettings.name = div.querySelector( "#project-name" ).value;
-			m_projectSettings.width = parseInt( div.querySelector( "#project-width" ).value );
-			m_projectSettings.height = parseInt( div.querySelector( "#project-height" ).value );
+			updateProjectSettings();
 			saveFiles( 100 );
 			return true;
 		}, "cancelCommand": function () {} } );
+
+		$( "#btn-download-project" ).on( "click", function () {
+			updateProjectSettings();
+			let indexHtml = HTML_TEMPLATE.replace( "[TITLE]", m_projectSettings.name );
+			let scripts = [ "<script src='https://pijs.org/qbs.js'></script>" ];
+			let zip = new JSZip();
+			zipProjectFiles( m_files, zip, scripts, "" );
+			indexHtml = indexHtml.replace( "[SCRIPTS]", scripts.join( "\n\t\t" ) );
+			zip.file( "index.html", indexHtml );
+			zip.generateAsync( { type: "blob" } )
+				.then( function( content )  {
+				    saveAs( content, "PIJS_PROJECT_" + m_projectSettings.name + ".zip" );
+				} );
+		} );
+
+		function zipProjectFiles( file, zip, scripts, folder ) {
+			if( file.type === FILE_TYPE_FOLDER ) {
+				for( let i = 0; i < file.content.length; i++ ) {
+					let path = "";
+					if( file.name === ROOT_NAME ) {
+						path = "";
+					} else if( folder === "" ) {
+						path = file.name;
+					} else {
+						path = folder + "/" + file.name;
+					}
+					zipProjectFiles( file.content[ i ], zip, scripts, path );
+				}
+			} else {
+				let filename = "";
+				if( folder === "" ) {
+					filename = file.fullname;
+				} else {
+					filename = folder + "/" + file.fullname;
+				}
+				if( file.type === FILE_TYPE_IMAGE || file.type === FILE_TYPE_AUDIO ) {
+					let content = file.content.substr( file.content.indexOf( "base64," ) + "base64,".length );
+					zip.file( filename, content, { "base64": true } );	
+				} else {
+					zip.file( filename, file.content );
+					scripts.push( "<script src='" + filename + "'></script>" );
+				}				
+			}
+		}
+
+		function updateProjectSettings() {
+			m_projectSettings.name = div.querySelector( "#project-name" ).value;
+			m_projectSettings.width = parseInt( div.querySelector( "#project-width" ).value );
+			m_projectSettings.height = parseInt( div.querySelector( "#project-height" ).value );
+		}
 	}
 
 	function createFileDialog( dialogType ) {
