@@ -92,6 +92,7 @@ var file = ( function () {
 		"height": 600
 	};
 	let m_hasProjectRun = false;
+	let m_zipFileUploads = null;
 
 	return {
 		"init": init,
@@ -890,7 +891,8 @@ var file = ( function () {
 		div.innerHTML = "<p><input id='fileUploads' type='file' accept='audio/*,image/*,.js,.zip' multiple></p>" +
 			"Storage Available: " + freespaceMB + "<br />" +
 			"File(s) Selected: <span id='fileCount'></span><br />" +
-			"File(s) Size: <span id='fileSize'></span><br />" +
+			"Zipped File(s): <span id='zippedFiles'></span><br />" +
+			"Total Size: <span id='fileSize'></span><br />" +
 			"<p id='fileMessage'></p>" +
 			"<p><span>Upload to Folder:</span>&nbsp;&nbsp;" +
 			"<select id='new-file-folder'>" + folderOptions + "</select>" + "</p>";
@@ -909,9 +911,9 @@ var file = ( function () {
 		} );
 		if( files ) {
 			div.querySelector( "#fileUploads" ).files = files;
-			checkFiles( div, files );
+			checkFiles( div, true );
 		}
-		div.querySelector( "#fileUploads" ).addEventListener( "change", () => checkFiles( div ) );
+		div.querySelector( "#fileUploads" ).addEventListener( "change", () => checkFiles( div, true ) );
 	}
 
 	function getMbKb( size ) {
@@ -998,6 +1000,24 @@ var file = ( function () {
 		return extensions[ "image/png" ];
 	}
 
+	function getTypeFromExtension( imageExtension ) {
+		let mimeTypes = {
+			".bmp": "image/bmp",
+			".gif": "image/gif",
+			".jpg": "image/jpeg",
+			".png": "image/png",
+			".webp": "image/webp",
+			".wav": "audio/wav",
+			".webm": "audio/webm",
+			".ogg": "audio/ogg",
+			".mp3": "audio/mpeg",
+			".mid": "audio/mid",
+			".mp4": "audio/mp4"
+		};
+
+		return mimeTypes[ imageExtension ];	
+	}
+
 	function getExtensionFromAudioType( audioType ) {
 		let extensions = {
 			"audio/wave": ".wav",
@@ -1024,16 +1044,26 @@ var file = ( function () {
 		return name.substring( 0, name.lastIndexOf( "." ) ) + "_" + ( index + "" ).padStart( 3, "0" ) + extension;
 	}
 
-	function checkFiles( div ) {
+	function checkFiles( div, resetZipFiles ) {
 		let files = div.querySelector( "#fileUploads" ).files;
 		let msg = "";
 
+		// Check for zip files - don't check rest of files until
+		if( resetZipFiles ) {
+			m_zipFileUploads = [];
+			if( checkZipFiles( files, div ) ) {
+				return;
+			}
+		}
+
+		div.querySelector( "#zippedFiles" ).innerText = m_zipFileUploads.length;
+
 		// Check the file types
 		let filesData = checkFileTypes( files );
-		if( filesData.bad.length > 0 ) {
+		if( files.length !== filesData.good.length ) {
 			for( let i = 0; i < filesData.bad.length; i++ ) {
 				msg += "<span class='msg-error'>Unable to upload file: </span>" + filesData.bad[ i ].name + ".<br />";
-			}			
+			}
 			let list = new DataTransfer();
 			for( let i = 0; i < filesData.good.length; i++ ) {
 				list.items.add( filesData.good[ i ] );
@@ -1065,6 +1095,50 @@ var file = ( function () {
 		div.querySelector( "#fileMessage" ).innerHTML = msg;
 	}
 
+	function checkZipFiles( files, div ) {
+		let timeout = 0;
+		let foundZipFile = false;
+
+		Array.from( files ).forEach( ( file ) => {
+			const extensions = [
+				".bmp", ".gif", ".jpg", ".png", ".webp", ".wav",
+				".webm", ".ogg", ".mp3", ".mid", ".mp4"
+			];
+			if( file.type === "application/zip" ) {
+				foundZipFile = true;
+				JSZip.loadAsync( file ).then( function( zip ) {
+					zip.forEach( function( relativePath, zipEntry ) {
+						if( ! zipEntry.dir ) {
+							if( zipEntry.name.endsWith( ".js" ) ) {
+								zip.file( zipEntry.name ).async( "string" ).then( function( data ) {
+									m_zipFileUploads.push( { "name": zipEntry.name, content: data } );
+									clearTimeout( timeout );
+									timeout = setTimeout( () => checkFiles( div, false ), 100 );
+								} );
+							} else {
+								zip.file( zipEntry.name ).async( "base64" ).then( function( data ) {
+									let content = "";
+									for( let j = 0; j < extensions.length; j++ ) {
+										if( zipEntry.name.endsWith( extensions[ j ] ) ) {
+											content = "data:" + getTypeFromExtension( extensions[ j ] ) + ";base64," + data;
+										}
+									}
+									if( content !== "" ) {
+										m_zipFileUploads.push( { "name": zipEntry.name, content: content } );
+									}
+									clearTimeout( timeout );
+									timeout = setTimeout( () => checkFiles( div, false ), 100 );
+								} );
+							}
+						}
+					} );
+				} );
+			}
+		} );
+
+		return foundZipFile;
+	}
+
 	function checkFileTypes( files ) {
 		let badFiles = [];
 		let goodFiles = [];
@@ -1074,7 +1148,9 @@ var file = ( function () {
 				file.type.indexOf( "image" ) === -1 &&
 				file.type.indexOf( "audio" ) === -1
 			) {
-				badFiles.push( file );
+				if( file.type !== "application/zip" ) {
+					badFiles.push( file );
+				}
 			} else {
 				goodFiles.push( file );
 			}
@@ -1083,10 +1159,15 @@ var file = ( function () {
 	}
 
 	function calculateFilesSize( files ) {
+		const BYTE_SIZE = str => new Blob([str]).size;
 		let totalBytes = 0;
 		Array.from( files ).forEach( ( file ) => {
 			totalBytes += file.size;
 		} );
+		for( let i = 0; i < m_zipFileUploads.length; i++ ) {
+			//const byte_Size = str => new Blob([str]).size;
+			totalBytes += BYTE_SIZE( m_zipFileUploads[ i ].content );
+		}
 		return totalBytes;
 	}
 
