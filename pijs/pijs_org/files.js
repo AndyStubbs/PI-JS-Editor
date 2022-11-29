@@ -429,6 +429,67 @@ var file = ( function () {
 		return null;
 	}
 
+	function createFileFromPath( filePath, fileData ) {
+		var currentFolder, parts, name, i, temp, path;
+
+		if( typeof filePath !== "string" ) {
+			return "Invalid Filename";
+		}
+
+		fileData.path = filePath;
+		currentFolder = m_files;
+		path = "";
+
+		// Create the folders
+		parts = filePath.split( "/" );
+		for( i = 0; i < parts.length; i++ ) {
+	
+			if( parts[ i ] === "" ) {
+				continue;
+			}
+		
+			name = parts[ i ];
+			if( name === ROOT_NAME ) {
+				path = name;
+			} else {
+				path += "/" + name;	
+			}
+
+			// Check if part is a folderName
+			if( i !== parts.length - 1 ) {
+	
+				// If it's a new folder then create it
+				if( ! findFileByPath( path ) ) {
+	
+					// Create the folder file
+					temp = {
+						"name": name,
+						"fullname": name,
+						"extension": "",
+						"type": FILE_TYPE_FOLDER,
+						"content": []
+					};
+					createFile( temp, path.substr( 0, path.lastIndexOf( "/" ) ) );
+					currentFolder.content.push( temp );
+					currentFolder = temp;
+				} else {
+					currentFolder = findFileByPath( path );
+				}
+	
+			} else {
+	
+				// Set the file name part to the file data
+				fileData.name = name;
+			}
+		}
+
+		// Create the file
+		createFile( fileData, filePath.substr( 0, filePath.lastIndexOf( "/" ) ) );
+		currentFolder.content.push( fileData );
+
+		return fileData;
+	}
+
 	function findFileByPath( path ) {
 		if( path === ROOT_NAME ) {
 			return m_files;
@@ -903,10 +964,14 @@ var file = ( function () {
 				Array.from( files ).forEach( ( file ) => {
 					saveUploadedFile( file, folderPath );
 				} );
+				for( let i = 0; i < m_zipFileUploads.length; i++ ) {
+					saveUploadedZipFile( m_zipFileUploads[ i ], folderPath );
+				}
+				m_zipFileUploads = null;
 				return true;
 			},
 			"cancelCommand": function () {
-
+				m_zipFileUploads = null;
 			}
 		} );
 		if( files ) {
@@ -924,9 +989,20 @@ var file = ( function () {
 		}
 	}
 
+	function saveUploadedZipFile( file, folderPath ) {
+		let name = file.name;
+		let extension = name.substr( name.lastIndexOf( "." ) );
+		if( name.indexOf( "/" ) === -1 ) {
+			name = file.name;
+		} else {
+			folderPath = folderPath + "/" + name.substr( 0, name.lastIndexOf( "/" ) );
+			name = name.substr( -( name.length - name.lastIndexOf( "/" ) - 1 ) );
+		}
+		name = name.substr( 0, name.lastIndexOf( "." ) );
+		addNewUploadedFile( name, folderPath, extension, file.content, file.type );
+	}
+
 	function saveUploadedFile( uploadedFile, folderPath ) {
-		let parent = findFileByPath( folderPath );
-		let parentFolder = parent.content;
 		let type = "";
 		let reader = new FileReader ();
 
@@ -953,37 +1029,54 @@ var file = ( function () {
 				audioType = content.substring( content.indexOf( "data:" ) + 5, content.indexOf( ";" ) );
 				extension = getExtensionFromAudioType( audioType );
 			}
-			let fullname = name + extension;
-			let filePath = folderPath + "/" + fullname;
-			let searchForFile = findFileByPath( filePath );
-			let index = 0;
-			while( searchForFile ) {
-				name = getUpdatedName( name, ++index );
-				fullname = name + extension;
-				filePath = folderPath + "/" + fullname;
-				searchForFile = findFileByPath( filePath );
-			}
-			
-			let newFile = {
-				"name": name,
-				"fullname": fullname,
-				"type": type,
-				"content": content,
-				"extension": extension
-			};
-			parentFolder.push( newFile );
-			if( parent.path === "" ) {
-				createFile( newFile, ROOT_NAME );
-			} else {
-				createFile( newFile, parent.path + "/" + parent.fullname );
-			}
-			refreshFileView();
+
+			addNewUploadedFile( name, folderPath, extension, content, type );
 		};
 		if( type === "javascript" ) {
 			reader.readAsText( uploadedFile );
 		} else {
 			reader.readAsDataURL( uploadedFile );
 		}
+	}
+
+	function addNewUploadedFile( name, folderPath, extension, content, type ) {
+		let fullname = name + extension;
+		let filePath = folderPath + "/" + fullname;
+		let parent = findFileByPath( folderPath );
+		if( !parent ) {
+			let shortname = folderPath.substr( folderPath.lastIndexOf( "/" ) + 1 );
+			parent = createFileFromPath( folderPath, {
+				"extension": "",
+				"name": shortname,
+				"fullname": shortname,
+				"type": FILE_TYPE_FOLDER,
+				"content": []
+			} );
+		}
+		let parentFolder = parent.content;
+		let searchForFile = findFileByPath( filePath );
+		let index = 0;
+		while( searchForFile ) {
+			name = getUpdatedName( name, ++index );
+			fullname = name + extension;
+			filePath = folderPath + "/" + fullname;
+			searchForFile = findFileByPath( filePath );
+		}
+
+		let newFile = {
+			"name": name,
+			"fullname": fullname,
+			"type": type,
+			"content": content,
+			"extension": extension
+		};
+		parentFolder.push( newFile );
+		if( parent.path === "" ) {
+			createFile( newFile, ROOT_NAME );
+		} else {
+			createFile( newFile, parent.path + "/" + parent.fullname );
+		}
+		refreshFileView();
 	}
 
 	function getExtensionFromImageType( imageType ) {
@@ -1000,7 +1093,7 @@ var file = ( function () {
 		return extensions[ "image/png" ];
 	}
 
-	function getTypeFromExtension( imageExtension ) {
+	function getTypeFromExtension( fileExtension ) {
 		let mimeTypes = {
 			".bmp": "image/bmp",
 			".gif": "image/gif",
@@ -1015,7 +1108,25 @@ var file = ( function () {
 			".mp4": "audio/mp4"
 		};
 
-		return mimeTypes[ imageExtension ];	
+		return mimeTypes[ fileExtension ];	
+	}
+
+	function getFileTypeFromExtension( fileExtension ) {
+		let mimeTypes = {
+			".bmp": FILE_TYPE_IMAGE,
+			".gif": FILE_TYPE_IMAGE,
+			".jpg": FILE_TYPE_IMAGE,
+			".png": FILE_TYPE_IMAGE,
+			".webp": FILE_TYPE_IMAGE,
+			".wav": FILE_TYPE_AUDIO,
+			".webm": FILE_TYPE_AUDIO,
+			".ogg": FILE_TYPE_AUDIO,
+			".mp3": FILE_TYPE_AUDIO,
+			".mid": FILE_TYPE_AUDIO,
+			".mp4": FILE_TYPE_AUDIO
+		};
+
+		return mimeTypes[ fileExtension ];	
 	}
 
 	function getExtensionFromAudioType( audioType ) {
@@ -1111,20 +1222,22 @@ var file = ( function () {
 						if( ! zipEntry.dir ) {
 							if( zipEntry.name.endsWith( ".js" ) ) {
 								zip.file( zipEntry.name ).async( "string" ).then( function( data ) {
-									m_zipFileUploads.push( { "name": zipEntry.name, content: data } );
+									m_zipFileUploads.push( { "name": zipEntry.name, "content": data, "type": FILE_TYPE_SCRIPT } );
 									clearTimeout( timeout );
 									timeout = setTimeout( () => checkFiles( div, false ), 100 );
 								} );
 							} else {
 								zip.file( zipEntry.name ).async( "base64" ).then( function( data ) {
 									let content = "";
+									let fileType = "";
 									for( let j = 0; j < extensions.length; j++ ) {
 										if( zipEntry.name.endsWith( extensions[ j ] ) ) {
+											fileType = getFileTypeFromExtension( extensions[ j ] );
 											content = "data:" + getTypeFromExtension( extensions[ j ] ) + ";base64," + data;
 										}
 									}
 									if( content !== "" ) {
-										m_zipFileUploads.push( { "name": zipEntry.name, content: content } );
+										m_zipFileUploads.push( { "name": zipEntry.name, "content": content, "type": fileType } );
 									}
 									clearTimeout( timeout );
 									timeout = setTimeout( () => checkFiles( div, false ), 100 );
