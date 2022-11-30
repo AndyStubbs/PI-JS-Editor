@@ -211,9 +211,24 @@ var file = ( function () {
 		m_fileLookup[ fileId ] = file;
 	}
 
-	function createFileView( element, folder, init ) {
+	function createFileView( element, folder, init, isHidden ) {
 		let ul = document.createElement( "ul" );
 		let selectedFile = null;
+
+		if( isHidden ) {
+			ul.style.display = "none";
+		}
+		folder.sort( function ( a, b ) {
+			if ( a.type === FILE_TYPE_FOLDER && b.type === FILE_TYPE_FOLDER ) {
+				return a.fullname.localeCompare( b.fullname );
+			} else if( a.type === FILE_TYPE_FOLDER ) {
+				return -1;
+			} else if( b.type === FILE_TYPE_FOLDER ) {
+				return 1;
+			} else {
+				return a.fullname.localeCompare( b.fullname );
+			}
+		} );
 		for( let i = 0; i < folder.length; i++ ) {
 			let file = folder[ i ];
 			let li = document.createElement( "li" );
@@ -225,7 +240,7 @@ var file = ( function () {
 
 			if( file.type === FILE_TYPE_FOLDER ) {
 				updateFolderName( li, file, true );
-				createFileView( li, file.content, init );
+				createFileView( li, file.content, init, file.minimized );
 			} else {
 				span.innerText = file.fullname;
 				if( init && file.isOpen ) {
@@ -379,9 +394,11 @@ var file = ( function () {
 			if( ul.style.display === "none" ) {
 				ul.style.display = "";
 				updateFolderName( target, file, true );
+				file.minimized = false;
 			} else {
 				ul.style.display = "none";
 				updateFolderName( target, file, false );
+				file.minimized = true;
 			}
 		} else {
 			openFile( file );
@@ -1357,6 +1374,7 @@ var file = ( function () {
 			clone.type = item.type;
 			clone.path = item.path;
 			clone.extension = item.extension;
+			clone.minimized = item.minimized;
 			if( openTabs.indexOf( item.id ) > -1 ) {
 				clone.isOpen = true;
 			}
