@@ -41,11 +41,13 @@ var editor = ( function () {
 			}
 		} );
 
+		monaco.languages.typescript.javascriptDefaults.addExtraLib( g_mapStr, "filename/fields.d.ts" );
 		activeEditor = monaco.editor.create( containerElement, {
 			"model": null,
 			"theme": "myCustomTheme",
-				"fontSize": "14px",
-				"bracketPairColorization.enabled": true
+			"language": 'javascript',
+			"fontSize": "14px",
+			"bracketPairColorization.enabled": true
 		} );
 
 		editors.push( activeEditor );
