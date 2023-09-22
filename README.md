@@ -1,3 +1,3 @@
-# qbs-editor
+# pijs-editor
 
 
